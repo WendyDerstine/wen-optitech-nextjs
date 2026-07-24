@@ -610,7 +610,7 @@ export default function TopicHubPage({ config }: { config: TopicHubConfig }) {
       }
       const typeParam = typeMap[ct] ?? 'Page'
       const domainSuffix = config.siteDomain ? `&domain=${encodeURIComponent(config.siteDomain)}` : ''
-      const data = await fetch(`/api/search?semantic=true&type=${typeParam}&limit=12&q=${qs}${domainSuffix}`)
+      const data = await fetch(`/api/search?semantic=true&type=${typeParam}&limit=9&q=${qs}${domainSuffix}`)
         .then(r => r.json()).catch(() => [])
       return { ct, results: Array.isArray(data) ? data : [], docs: [] }
     })
@@ -686,7 +686,7 @@ export default function TopicHubPage({ config }: { config: TopicHubConfig }) {
           locations: 'Location', practitioners: 'Practitioner',
         }
         const dom = config.siteDomain ? `&domain=${config.siteDomain}` : ''
-        return `GET /api/search?semantic=true&type=${typeMap[ct] ?? 'Page'}&limit=12&q=${q}${dom}`
+        return `GET /api/search?semantic=true&type=${typeMap[ct] ?? 'Page'}&limit=9&q=${q}${dom}`
       }),
       ``,
       `# Content Graph strategy`,
@@ -785,7 +785,7 @@ export default function TopicHubPage({ config }: { config: TopicHubConfig }) {
                           return (
                             <span key={i}>
                               <span style={{ color: 'oklch(0.91 0.27 132)' }}>{'GET '}</span>
-                              <span style={{ color: 'oklch(0.82 0.01 250)' }}>{`/api/search?semantic=true&type=${typeMap[ct] ?? 'Page'}&limit=12&q=${q}${dom}\n`}</span>
+                              <span style={{ color: 'oklch(0.82 0.01 250)' }}>{`/api/search?semantic=true&type=${typeMap[ct] ?? 'Page'}&limit=9&q=${q}${dom}\n`}</span>
                             </span>
                           )
                         })}
