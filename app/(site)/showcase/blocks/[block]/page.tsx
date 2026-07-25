@@ -2417,7 +2417,7 @@ const MOCK_PRACTITIONERS: PractitionerCardData[] = [
     ],
     phone: '(312) 555-0142', email: 'e.vargas@example.com', officeLocation: 'Chicago, IL',
     languages: 'English, Spanish', linkedIn: 'https://www.linkedin.com/in/example',
-    groupTag: 'medical', url: '/practitioners/elena-vargas',
+    url: '/practitioners/elena-vargas',
   },
   {
     key: 'pr-bell', firstName: 'Marcus', lastName: 'Bell', suffix: 'MD', credentials: 'MD',
@@ -2426,7 +2426,7 @@ const MOCK_PRACTITIONERS: PractitionerCardData[] = [
     bio: { html: '<p>Dr. Bell specializes in hematologic malignancies and leads the institute’s clinical trials program, with an emphasis on immunotherapy and precision treatment planning.</p>' },
     practiceAreas: [{ areaName: 'Oncology', facility: 'Lakeside Cancer Institute', isPrimary: true }],
     phone: '(312) 555-0188', email: 'm.bell@example.com', officeLocation: 'Chicago, IL',
-    languages: 'English', groupTag: 'medical', url: '/practitioners/marcus-bell',
+    languages: 'English', url: '/practitioners/marcus-bell',
   },
   {
     key: 'pr-nair', firstName: 'Priya', lastName: 'Nair', suffix: 'MD', credentials: 'MD, FACEP',
@@ -2435,7 +2435,7 @@ const MOCK_PRACTITIONERS: PractitionerCardData[] = [
     bio: { html: '<p>Dr. Nair practices emergency medicine and serves as the department’s simulation education lead, building rapid-response protocols for high-acuity presentations.</p>' },
     practiceAreas: [{ areaName: 'Emergency Medicine', facility: 'Central Hospital', isPrimary: true }],
     phone: '(312) 555-0203', email: 'p.nair@example.com', officeLocation: 'Evanston, IL',
-    languages: 'English, Hindi, Mandarin', groupTag: 'medical', url: '/practitioners/priya-nair',
+    languages: 'English, Hindi, Mandarin', url: '/practitioners/priya-nair',
   },
 
   // ── Legal ──────────────────────────────────────────────────────
@@ -2447,7 +2447,7 @@ const MOCK_PRACTITIONERS: PractitionerCardData[] = [
     practiceAreas: [{ areaName: 'Tax Law', facility: 'Chicago Office', isPrimary: true }],
     phone: '(312) 555-0310', email: 'j.reese@example.com', officeLocation: 'Chicago, IL',
     languages: 'English', linkedIn: 'https://www.linkedin.com/in/example',
-    groupTag: 'legal', url: '/practitioners/jonathan-reese',
+    url: '/practitioners/jonathan-reese',
   },
   {
     key: 'pr-marchetti', firstName: 'Sofia', lastName: 'Marchetti', suffix: 'JD', credentials: 'JD, LLM',
@@ -2456,7 +2456,7 @@ const MOCK_PRACTITIONERS: PractitionerCardData[] = [
     bio: { html: '<p>Sofia represents plaintiffs in complex personal injury and product liability litigation, with a track record of trial verdicts in catastrophic-injury cases.</p>' },
     practiceAreas: [{ areaName: 'Personal Injury', facility: 'Milan Office', isPrimary: true }],
     phone: '(312) 555-0355', email: 's.marchetti@example.com', officeLocation: 'New York, NY',
-    languages: 'English, Italian', groupTag: 'legal', url: '/practitioners/sofia-marchetti',
+    languages: 'English, Italian', url: '/practitioners/sofia-marchetti',
   },
   {
     key: 'pr-okafor', firstName: 'David', lastName: 'Okafor', suffix: 'Esq.', credentials: 'JD',
@@ -2465,7 +2465,7 @@ const MOCK_PRACTITIONERS: PractitionerCardData[] = [
     bio: { html: '<p>David leads the corporate practice, advising on mergers and acquisitions, private equity transactions, and cross-border joint ventures for technology and manufacturing clients.</p>' },
     practiceAreas: [{ areaName: 'Corporate Law', facility: 'Chicago Office', isPrimary: true }],
     phone: '(312) 555-0399', email: 'd.okafor@example.com', officeLocation: 'Chicago, IL',
-    languages: 'English, French', groupTag: 'legal', url: '/practitioners/david-okafor',
+    languages: 'English, French', url: '/practitioners/david-okafor',
   },
 
   // ── Technology ───────────────────────────────────────────────────────────────────
@@ -2477,7 +2477,7 @@ const MOCK_PRACTITIONERS: PractitionerCardData[] = [
     practiceAreas: [{ areaName: 'Platform Engineering', facility: 'Stockholm', isPrimary: true }],
     email: 'ava@example.com', officeLocation: 'Stockholm, SE',
     languages: 'English, Swedish', linkedIn: 'https://www.linkedin.com/in/example',
-    groupTag: 'technology', url: '/practitioners/ava-lindqvist',
+    url: '/practitioners/ava-lindqvist',
   },
   {
     key: 'pr-park', firstName: 'Theo', lastName: 'Park', credentials: '',
@@ -2486,20 +2486,20 @@ const MOCK_PRACTITIONERS: PractitionerCardData[] = [
     bio: { html: '<p>Theo shapes the product roadmap across the experimentation and content suites, partnering with go-to-market teams to translate platform capability into customer outcomes.</p>' },
     practiceAreas: [{ areaName: 'Product Strategy', facility: 'Seoul', isPrimary: true }],
     email: 'theo@example.com', officeLocation: 'Seoul, KR',
-    languages: 'English, Korean', groupTag: 'technology', url: '/practitioners/theo-park',
+    languages: 'English, Korean', url: '/practitioners/theo-park',
   },
 ]
 
 function PractitionerListingShowcase() {
-  const medical = MOCK_PRACTITIONERS.filter(p => p.groupTag === 'medical')
-  const tech    = MOCK_PRACTITIONERS.filter(p => p.groupTag === 'technology')
+  const medical = MOCK_PRACTITIONERS.slice(0, 3)
+  const tech    = MOCK_PRACTITIONERS.slice(6)
   return (
     <>
       <BlockHeader slug="practitioner-listing" />
 
       <div className="px-md pb-sm lg:px-lg pt-md">
         <p className="text-label text-fg-muted/60 leading-body max-w-[65ch]">
-          In production, practitioners are fetched at render time from Practitioner Profiles, scoped by the Group Tag Filter. The showcase uses static fixtures across three verticals so every filter and empty state is exercisable. Search by a name (“Vargas”) or a specialty (“tax”); the specialty, location, and language dropdowns list only values present in the loaded set, with multiple selections allowed per filter.
+          In production, practitioners are fetched at render time from Practitioner Profiles, scoped to the current site via siteKey. The showcase uses static fixtures across three verticals so every filter and empty state is exercisable. Search by a name (“Vargas”) or a specialty (“tax”); the specialty, location, and language dropdowns list only values present in the loaded set, with multiple selections allowed per filter.
         </p>
       </div>
 
@@ -2562,21 +2562,21 @@ const MOCK_LOCATIONS: LocationData[] = [
     imageUrl: LOC_IMG_HOSPITAL,
     address: '1 Gustave L. Levy Pl, New York, NY 10029',
     details: { html: '<p>Level I trauma center. Emergency department open 24/7. Visitor parking on-site; valet at the main entrance.</p>' },
-    groupTag: 'optimedical', url: '/locations/memorial-medical-center',
+    url: '/locations/memorial-medical-center',
     coordinates: { lat: 40.7900, lon: -73.9526 },
   },
   {
     key: 'loc-downtown-clinic', locationName: 'Downtown Health Clinic', locationLabel: 'Clinic',
     address: '462 First Ave, New York, NY 10016',
     details: { html: '<p>Primary and urgent care, Mon–Sat 8am–8pm. Walk-ins welcome. Wheelchair accessible.</p>' },
-    groupTag: 'optimedical', url: '/locations/downtown-health-clinic',
+    url: '/locations/downtown-health-clinic',
     coordinates: { lat: 40.7397, lon: -73.9754 },
   },
   {
     key: 'loc-brooklyn-pharmacy', locationName: 'Brooklyn Pharmacy', locationLabel: 'Pharmacy',
     address: '150 55th St, Brooklyn, NY 11220',
     details: { html: '<p>Full-service pharmacy with same-day prescription pickup and immunizations. Drive-through available.</p>' },
-    groupTag: 'optimedical', url: '/locations/brooklyn-pharmacy',
+    url: '/locations/brooklyn-pharmacy',
     coordinates: { lat: 40.6360, lon: -74.0170 },
   },
 
@@ -2586,28 +2586,28 @@ const MOCK_LOCATIONS: LocationData[] = [
     imageUrl: LOC_IMG_HQ,
     address: '1 Financial Center, Boston, MA 02111',
     details: { html: '<p>Global headquarters. Reception on the 12th floor; visitor badges required. Steps from South Station.</p>' },
-    groupTag: 'optitech-offices', url: '/locations/boston-headquarters',
+    url: '/locations/boston-headquarters',
     coordinates: { lat: 42.3553, lon: -71.0557 },
   },
   {
     key: 'loc-ny-office', locationName: 'New York Office', locationLabel: 'Office',
     address: '429 11th Ave, New York, NY 10001',
     details: { html: '<p>Sales and customer success teams. Hudson Yards / West Side. By appointment.</p>' },
-    groupTag: 'optitech-offices', url: '/locations/new-york-office',
+    url: '/locations/new-york-office',
     coordinates: { lat: 40.7550, lon: -74.0020 },
   },
 ]
 
 function LocationListingShowcase() {
-  const medical = MOCK_LOCATIONS.filter(l => l.groupTag === 'optimedical')
-  const offices = MOCK_LOCATIONS.filter(l => l.groupTag === 'optitech-offices')
+  const medical = MOCK_LOCATIONS.slice(0, 3)
+  const offices = MOCK_LOCATIONS.slice(3)
   return (
     <>
       <BlockHeader slug="location-listing" />
 
       <div className="px-md pb-sm lg:px-lg pt-md">
         <p className="text-label text-fg-muted/60 leading-body max-w-[65ch]">
-          In production, locations are fetched at render time from Location Profiles, scoped by the Group Tag Filter, and their addresses geocoded via the Mapbox API (cached 24h). The showcase uses static fixtures with pre-resolved coordinates across two groups, so every view, filter, and empty state is exercisable with no API calls. Switch views with the segmented control; in the map view, click a marker or a rail card to fly to it and open its popup. The label chips list only the labels present in the loaded set.
+          In production, locations are fetched at render time from Location Profiles, scoped to the current site via siteKey, and their addresses geocoded via the Mapbox API (cached 24h). The showcase uses static fixtures with pre-resolved coordinates across two groups, so every view, filter, and empty state is exercisable with no API calls. Switch views with the segmented control; in the map view, click a marker or a rail card to fly to it and open its popup. The label chips list only the labels present in the loaded set.
         </p>
       </div>
 

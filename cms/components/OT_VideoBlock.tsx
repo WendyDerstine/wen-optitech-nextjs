@@ -23,15 +23,16 @@ export default function OT_VideoBlock({ content, displaySettings = {} }: Props) 
 
   if (!hasEditorial) {
     return (
-      <div {...pa(content.__composition)} className="w-full flex-1 min-h-0 flex flex-col" data-stagger={staggerAttr}>
-        <VideoBlock
-          src={content.videoUrl ?? ''}
-          title={content.title ?? ''}
-          caption={content.caption ?? undefined}
-          styleOptions={styleOptions}
-          previewAttrs={{ caption: pa('caption') }}
-          fillHeight={true}
-        />
+      <div {...pa(content.__composition)} className="w-full py-xl px-md lg:px-lg" data-stagger={staggerAttr}>
+        <div className="mx-auto max-w-360">
+          <VideoBlock
+            src={content.videoUrl ?? ''}
+            title={content.title ?? ''}
+            caption={content.caption ?? undefined}
+            styleOptions={styleOptions}
+            previewAttrs={{ caption: pa('caption') }}
+          />
+        </div>
       </div>
     )
   }
