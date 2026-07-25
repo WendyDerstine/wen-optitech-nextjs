@@ -34,24 +34,23 @@ export default function OT_ImageBlock({ content, displaySettings = {} }: Props) 
   )
 
   if (!hasEditorial) {
-    // Standalone in a VB column: fill the column height so the image matches
-    // adjacent content. 400px floor (from ImageBlock min-h-100) for single-column sections.
     return (
       <div
         {...pa(content.__composition)}
-        className="w-full flex-1 min-h-0 flex flex-col"
+        className="w-full py-xl px-md lg:px-lg"
         data-stagger={staggerAttr}
       >
-        {!imageSrc ? placeholder : (
-          <ImageBlock
-            src={imageSrc}
-            alt={content.alt ?? ''}
-            caption={content.caption ?? undefined}
-            styleOptions={styleOptions}
-            previewAttrs={{ image: pa('image'), caption: pa('caption') }}
-            fillHeight={true}
-          />
-        )}
+        <div className="mx-auto max-w-360">
+          {!imageSrc ? placeholder : (
+            <ImageBlock
+              src={imageSrc}
+              alt={content.alt ?? ''}
+              caption={content.caption ?? undefined}
+              styleOptions={styleOptions}
+              previewAttrs={{ image: pa('image'), caption: pa('caption') }}
+            />
+          )}
+        </div>
       </div>
     )
   }
