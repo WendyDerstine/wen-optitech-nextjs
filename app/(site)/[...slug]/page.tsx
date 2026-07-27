@@ -504,6 +504,26 @@ async function CmsPage({ params, searchParams }: Props) {
       }
     }
 
+    // Topic Hub page — _page type, no composition nodes
+    if (exp?.__typename === 'OT_TopicHubPage') {
+      const contentKey = exp._metadata?.key as string | undefined
+      const hubContent = dm.isEnabled
+        ? exp
+        : (contentKey ? await getTopicHubPage(contentKey, locale) : null)
+
+      if (hubContent) {
+        return (
+          <>
+            {dm.isEnabled && cmsUrl && (
+              <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
+            )}
+            {dm.isEnabled && <NextPreviewComponent />}
+            <TopicHubPage config={hubContent as any} />
+          </>
+        )
+      }
+    }
+
     // Standalone block content (not an experience) — send to the isolated preview route
     // so it renders without site chrome and with proper communicationinjector.js setup.
     if (dm.isEnabled && exp?.__typename) {
@@ -517,26 +537,6 @@ async function CmsPage({ params, searchParams }: Props) {
       redirect(`/preview?${qs}`)
     }
     notFound()
-  }
-
-  // Topic Hub page — configurable AI-powered content discovery page
-  if (exp?.__typename === 'OT_TopicHubPage') {
-    const contentKey = exp._metadata?.key as string | undefined
-    const hubContent = dm.isEnabled
-      ? exp
-      : (contentKey ? await getTopicHubPage(contentKey, locale) : null)
-
-    if (hubContent) {
-      return (
-        <>
-          {dm.isEnabled && cmsUrl && (
-            <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
-          )}
-          {dm.isEnabled && <NextPreviewComponent />}
-          <TopicHubPage config={hubContent as any} />
-        </>
-      )
-    }
   }
 
   // Practitioner page — _experience type. The referenced practitioner record
