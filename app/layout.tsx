@@ -170,6 +170,13 @@ export default async function RootLayout({
     ? `window.PeeriusCallbacks=window.PeeriusCallbacks||{track:{type:'home',lang:${JSON.stringify(locale)}},apiVersion:'v1_4',smartRecs:function(j){window.__peeriusRecs=j;window.dispatchEvent(new CustomEvent('peerius:recs',{detail:j}))},info:function(j){window.__peeriusInfo=j}};`
     : null
 
+  // Google Analytics 4 — skipped in preview so the editor never inflates GA data.
+  const rawGaId = (settings?.googleAnalyticsId as string | null | undefined)?.trim()
+  const gaId = !isPreview && rawGaId && /^[A-Za-z0-9-]+$/.test(rawGaId) ? rawGaId : null
+  const gaInit = gaId
+    ? `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',${JSON.stringify(gaId)});`
+    : null
+
   // Content Recommendations (Idio): ia.js builds the visitor profile and sets
   // the `iv` cookie the Content Recommendations block reads server-side.
   const rawIdioClient = (settings?.contentRecsClientId as string | null | undefined)?.trim()
@@ -217,6 +224,10 @@ export default async function RootLayout({
         {peeriusShim && peeriusScriptUrl && (
           <script dangerouslySetInnerHTML={{ __html: peeriusShim }} suppressHydrationWarning />
         )}
+        {/* Google Analytics 4 — dataLayer init + config; external gtag.js loads after hydration below. */}
+        {gaInit && (
+          <script dangerouslySetInnerHTML={{ __html: gaInit }} suppressHydrationWarning />
+        )}
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
@@ -240,6 +251,9 @@ export default async function RootLayout({
         )}
         {peeriusShim && peeriusScriptUrl && (
           <Script src={peeriusScriptUrl} strategy="afterInteractive" />
+        )}
+        {gaId && (
+          <Script src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} strategy="afterInteractive" />
         )}
       </body>
     </html>
