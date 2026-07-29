@@ -1,4 +1,5 @@
 import { getClient } from '@/lib/optimizely'
+import { getCmpAccessToken, cmpConfigured } from '@/lib/cmpApi'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,66 +102,124 @@ function matchesFilter(mime: string, filterType: string): boolean {
   return true
 }
 
+// ─── CMP API path ────────────────────────────────────────────────────────────
+//
+// The folder_id used in the CMP REST API is a different identifier than the
+// ParentFolderGuid indexed in Content Graph. Using the CMP API directly (same
+// approach as /api/search/docs) reliably matches the folder ID visible in the
+// DAM UI and in the Topic Hub config.
+
+interface CmpApiAsset {
+  id:              string
+  title?:          string
+  is_archived?:    boolean
+  file_extension?: string | null
+  content?:        { type: string; value: string }
+}
+
+function extMatchesFilter(ext: string | null, filterType: string): boolean {
+  if (filterType === 'all') return true
+  const e = ext?.toLowerCase() ?? ''
+  const images    = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']
+  const videos    = ['mp4', 'mov', 'webm']
+  if (filterType === 'images')    return images.includes(e)
+  if (filterType === 'video')     return videos.includes(e)
+  if (filterType === 'documents') return !images.includes(e) && !videos.includes(e)
+  return true
+}
+
+async function getAssetsFromCmpApi(
+  folderId: string,
+  filterType: string,
+): Promise<ResourceAsset[]> {
+  const token = await getCmpAccessToken()
+  const url = `https://api.cmp.optimizely.com/v3/assets?folder_id=${encodeURIComponent(folderId)}&include_subfolder_assets=false&page_size=100`
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  if (!res.ok) throw new Error(`CMP assets fetch failed: ${res.status}`)
+
+  const body = (await res.json()) as { data?: CmpApiAsset[] }
+  return (body.data ?? [])
+    .filter(a => !a.is_archived && a.content?.value)
+    .filter(a => extMatchesFilter(a.file_extension ?? null, filterType))
+    .map(a => ({
+      title:       a.title ? titleWithoutExt(a.title) : 'Untitled',
+      url:         a.content!.value,
+      extension:   a.file_extension ?? extFromFilename(a.title ?? ''),
+      fileSize:    null,
+      description: null,
+      tags:        null,
+    }))
+}
+
+// ─── Content Graph fallback ───────────────────────────────────────────────────
+// Used when CMP credentials aren't configured (local dev / instances without CMP).
+
+async function getAssetsFromGraph(
+  folderGuid: string,
+  filterType: string,
+): Promise<ResourceAsset[]> {
+  const siblingsData = await getClient().request(SIBLINGS_QUERY, { parentFolderGuid: folderGuid })
+  const siblings: Array<{ key: string; Title: string; MimeType: string }> =
+    ((siblingsData as any)?.cmp_Asset?.items ?? [])
+      .map((item: any) => ({
+        key:      String(item._itemMetadata?.key   ?? ''),
+        Title:    String(item.Title    ?? ''),
+        MimeType: String(item.MimeType ?? ''),
+      }))
+      .filter((s: { key: string; Title: string }) => s.key && s.Title)
+      .filter((s: { MimeType: string }) => matchesFilter(s.MimeType, filterType))
+
+  if (!siblings.length) return []
+
+  const keys    = siblings.map(s => s.key)
+  const urlData = await getClient().request(ASSET_URLS_QUERY, { keys })
+  const urlMap  = new Map<string, { url: string; fileSize: number | null }>()
+  for (const item of (urlData as any)?._AssetItem?.items ?? []) {
+    const k   = item._itemMetadata?.key as string | undefined
+    const url = item._assetMetadata?.url as string | undefined
+    if (k && url) {
+      urlMap.set(k, {
+        url,
+        fileSize: typeof item._assetMetadata?.fileSize === 'number'
+          ? item._assetMetadata.fileSize
+          : null,
+      })
+    }
+  }
+
+  return siblings
+    .filter(s => urlMap.has(s.key))
+    .map(s => {
+      const { url, fileSize } = urlMap.get(s.key)!
+      return {
+        title:       titleWithoutExt(s.Title),
+        url,
+        extension:   extFromMime(s.MimeType) ?? extFromFilename(s.Title),
+        fileSize,
+        description: null,
+        tags:        null,
+      }
+    })
+}
+
 // ─── Data access ────────────────────────────────────────────────────────────────
 
 /**
- * Fetches all CMP assets in the DAM folder identified by the given folder GUID.
+ * Fetches all CMP assets in the DAM folder identified by the given folder ID.
  *
- * folderGuid  — the ParentFolderGuid of the DAM folder (from the damFolderId
- *               property; visible in the DAM URL bar as parentFolderGuid=...)
- * filterType  — display-template value; filters by MIME type category
+ * Uses the CMP REST API when credentials are available (primary path — matches
+ * the same folder_id visible in the DAM UI). Falls back to Content Graph when
+ * CMP credentials are absent.
  */
 export async function getResourceLibraryAssets(
-  folderGuid: string,
+  folderId: string,
   filterType = 'all',
 ): Promise<ResourceAsset[]> {
   try {
-    // ── Step 1: fetch all cmp_Asset items in the DAM folder ───────────────────
-    const siblingsData = await getClient().request(SIBLINGS_QUERY, { parentFolderGuid: folderGuid })
-    const siblings: Array<{ key: string; Title: string; MimeType: string }> =
-      ((siblingsData as any)?.cmp_Asset?.items ?? [])
-        .map((item: any) => ({
-          key:      String(item._itemMetadata?.key   ?? ''),
-          Title:    String(item.Title    ?? ''),
-          MimeType: String(item.MimeType ?? ''),
-        }))
-        .filter((s: { key: string; Title: string }) => s.key && s.Title)
-        .filter((s: { MimeType: string }) => matchesFilter(s.MimeType, filterType))
-
-    if (!siblings.length) return []
-
-    // ── Step 2: batch-fetch CDN download URLs via _AssetItem ──────────────────
-    // cmp_Asset has no url field; _assetMetadata.url on _AssetItem is the source.
-    const keys    = siblings.map(s => s.key)
-    const urlData = await getClient().request(ASSET_URLS_QUERY, { keys })
-    const urlMap  = new Map<string, { url: string; fileSize: number | null }>()
-    for (const item of (urlData as any)?._AssetItem?.items ?? []) {
-      const k   = item._itemMetadata?.key as string | undefined
-      const url = item._assetMetadata?.url as string | undefined
-      if (k && url) {
-        urlMap.set(k, {
-          url,
-          fileSize: typeof item._assetMetadata?.fileSize === 'number'
-            ? item._assetMetadata.fileSize
-            : null,
-        })
-      }
+    if (cmpConfigured()) {
+      return await getAssetsFromCmpApi(folderId, filterType)
     }
-
-    // ── Merge and return ResourceAsset list ───────────────────────────────────
-    return siblings
-      .filter(s => urlMap.has(s.key))
-      .map(s => {
-        const { url, fileSize } = urlMap.get(s.key)!
-        return {
-          title:       titleWithoutExt(s.Title),
-          url,
-          extension:   extFromMime(s.MimeType) ?? extFromFilename(s.Title),
-          fileSize,
-          description: null,
-          tags:        null,
-        }
-      })
+    return await getAssetsFromGraph(folderId, filterType)
   } catch {
     return []
   }
