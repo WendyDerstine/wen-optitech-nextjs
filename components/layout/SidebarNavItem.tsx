@@ -21,8 +21,16 @@ type Props = {
  */
 function matchHref(pathname: string, href: string) {
   if (!href || href === '#') return { exact: false, section: false }
-  const exact = pathname === href
-  const section = exact || (href !== '/' && pathname.startsWith(`${href}/`))
+  let path = href
+  if (href.startsWith('http')) {
+    try { path = new URL(href).pathname } catch { return { exact: false, section: false } }
+  }
+  // CMS stores hrefs with trailing slashes; usePathname() returns paths without.
+  // Normalise both sides so '/pricing/' matches '/pricing'.
+  const normPath     = path     === '/' ? path     : path.replace(/\/$/, '')
+  const normPathname = pathname === '/' ? pathname : pathname.replace(/\/$/, '')
+  const exact   = normPathname === normPath
+  const section = exact || (normPath !== '/' && normPathname.startsWith(`${normPath}/`))
   return { exact, section }
 }
 
@@ -53,7 +61,7 @@ export function SidebarNavItem({ label, href, children }: Props) {
         className={[
           'flex items-center px-sm py-[7px] rounded-ot-control text-sm transition-colors duration-150 ease-quick',
           sectionActive
-            ? 'bg-brand/10 text-fg font-semibold'
+            ? 'bg-brand/15 text-fg font-semibold'
             : 'font-medium text-fg-muted hover:text-fg hover:bg-fg/[0.05]',
         ].join(' ')}
       >
@@ -75,7 +83,7 @@ export function SidebarNavItem({ label, href, children }: Props) {
           // merely expanded to browse (bold only — the "focus" state) >
           // collapsed and not current (muted).
           sectionActive
-            ? 'bg-brand/10 text-fg font-semibold'
+            ? 'bg-brand/15 text-fg font-semibold'
             : open
               ? 'text-fg font-semibold hover:bg-fg/[0.05]'
               : 'text-fg-muted font-medium hover:text-fg hover:bg-fg/[0.05]',
@@ -103,7 +111,7 @@ export function SidebarNavItem({ label, href, children }: Props) {
                 className={[
                   'group/sub flex items-center gap-xs px-sm py-[5px] rounded-ot-control text-label transition-colors duration-150 ease-quick',
                   subActive
-                    ? 'bg-brand/10 text-fg font-semibold'
+                    ? 'bg-brand/15 text-fg font-semibold'
                     : 'font-medium text-fg-muted hover:text-fg hover:bg-fg/[0.05]',
                 ].join(' ')}
               >
