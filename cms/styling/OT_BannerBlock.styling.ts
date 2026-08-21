@@ -1,4 +1,4 @@
-import type { BannerStyleOptions } from '@/components/blocks/BannerBlock'
+import type { BannerStyleOptions, PaletteOption } from '@/components/blocks/BannerBlock'
 
 export function getBannerStyles(s: Record<string, string | boolean>): BannerStyleOptions {
   return {
@@ -7,5 +7,6 @@ export function getBannerStyles(s: Record<string, string | boolean>): BannerStyl
     alignment:  (s.alignment  ?? 'center')  as BannerStyleOptions['alignment'],
     size:       (s.size       ?? 'large')   as BannerStyleOptions['size'],
     imageBlend: (s.imageBlend ?? 'overlay') as BannerStyleOptions['imageBlend'],
+    textColor:  (s.textColor  ?? 'auto')    as PaletteOption,
   }
 }
