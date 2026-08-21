@@ -333,7 +333,7 @@ export default function BannerBlock({
 
   return (
     <section
-      className={cn(sectionCva({ size }), flatBgClass)}
+      className={cn(sectionCva({ size }), flatBgClass, isFlat && 'border-transparent')}
       data-theme={dataTheme}
     >
 
