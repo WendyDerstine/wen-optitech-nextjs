@@ -89,7 +89,7 @@ function FullBleedSlide({ slide }: { slide: CarouselSlideData }) {
       />
       {/* Text content */}
       <div className="absolute inset-0 flex items-center px-8 md:px-16">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-[var(--ot-measure-tight)]">
           {slide.eyebrow && (
             <p className="text-label tracking-label uppercase font-semibold text-white/70 mb-2">
               {slide.eyebrow}
