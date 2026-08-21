@@ -85,23 +85,23 @@ function FullBleedSlide({ slide }: { slide: CarouselSlideData }) {
       {/* Gradient overlay — dark left anchor, fades right */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-transparent"
+        className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"
       />
       {/* Text content */}
       <div className="absolute inset-0 flex items-center">
-        <div className="px-section-x w-full max-w-2xl">
+        <div className="px-8 md:px-16 max-w-xl">
           {slide.eyebrow && (
-            <p className="text-label tracking-label uppercase font-semibold text-white/70 mb-sm">
+            <p className="text-label tracking-label uppercase font-semibold text-white/70 mb-2">
               {slide.eyebrow}
             </p>
           )}
           {slide.heading && (
-            <h3 className="text-display font-display leading-display text-white mb-md">
+            <h3 className="text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight text-white mb-4">
               {slide.heading}
             </h3>
           )}
           {slide.body && (
-            <p className="text-body leading-body text-white/80 mb-lg max-w-lg">
+            <p className="text-sm md:text-base leading-relaxed text-white/80 mb-6 max-w-md">
               {slide.body}
             </p>
           )}
