@@ -7,15 +7,19 @@ import BannerEntrance from './BannerEntrance'
 
 // ─── Style option types ───────────────────────────────────────────────────────
 
-export type TextColorOption =
+export type PaletteOption =
   | 'auto' | 'brand' | 'brand_hover' | 'accent'
   | 'fg_on_brand' | 'fg' | 'fg_muted' | 'surface' | 'canvas'
 
+export type TextColorOption = PaletteOption
+export type BgColorOption   = PaletteOption
+
 export type BannerStyleOptions = {
   color?:      'canvas' | 'surface' | 'brand'
+  bgColor?:    BgColorOption
   alignment?:  'center' | 'left'
   size?:       'large'  | 'compact' | 'display'
-  treatment?:  'scrim'  | 'glass'
+  treatment?:  'scrim'  | 'glass'   | 'flat'
   imageBlend?: 'overlay' | 'multiply'
   textColor?:  TextColorOption
 }
@@ -207,6 +211,7 @@ export default function BannerBlock({
 }: BannerBlockProps) {
   const {
     color      = 'canvas',
+    bgColor    = 'auto',
     alignment  = 'center',
     size       = 'large',
     treatment  = 'scrim',
@@ -215,11 +220,34 @@ export default function BannerBlock({
   } = styleOptions
 
   const isGlass    = treatment === 'glass'
+  const isFlat     = treatment === 'flat'
   const isBrand    = color === 'brand'
   const isCentered = alignment === 'center'
   const hasImage   = Boolean(bgImageSrc)
   const scrimClass = getScrimClass(color, imageBlend, treatment, hasImage)
   const Heading    = headingLevel
+
+  // ── Flat treatment: solid background, no overlays ─────────────────────────
+  const BG_CLASS: Partial<Record<BgColorOption, string>> = {
+    brand:       'bg-brand',
+    brand_hover: 'bg-brand-hover',
+    accent:      'bg-accent',
+    fg_on_brand: 'bg-fg-on-brand',
+    fg:          'bg-fg',
+    fg_muted:    'bg-fg-muted',
+    surface:     'bg-surface',
+    canvas:      'bg-canvas',
+  }
+  const BG_FALLBACK: Record<string, string> = { canvas: 'bg-canvas', surface: 'bg-surface', brand: 'bg-brand' }
+  const FLAT_DARK   = new Set(['brand', 'brand_hover', 'accent', 'fg', 'fg_muted'])
+  const flatBgClass = isFlat
+    ? (bgColor !== 'auto' ? BG_CLASS[bgColor] : BG_FALLBACK[color])
+    : undefined
+  const dataTheme = isFlat
+    ? (bgColor !== 'auto'
+        ? FLAT_DARK.has(bgColor) ? ('dark' as const) : ('light' as const)
+        : isBrand ? ('dark' as const) : undefined)
+    : (isBrand || hasImage) ? ('dark' as const) : undefined
 
   // When textColor is set, twMerge resolves the override over the CVA color class
   // because both are registered in the same 'text-color' conflict group in lib/utils.ts.
@@ -304,43 +332,41 @@ export default function BannerBlock({
 
   return (
     <section
-      className={sectionCva({ size })}
-      data-theme={isBrand || hasImage ? 'dark' : undefined}
+      className={cn(sectionCva({ size }), flatBgClass)}
+      data-theme={dataTheme}
     >
 
-      {/* ── Background layer (z-0, absolute inset) ─────────────────────── */}
-      <div className="absolute inset-0 z-0" aria-hidden="true">
-        {/* Background image */}
-        {hasImage && (
-          <Image
-            src={bgImageSrc!}
-            alt=""
-            fill
-            sizes="100vw"
-            // Only the hero banner (h1 = page's primary heading) is the LCP
-            // candidate and should preload. Secondary (h2) banners lazy-load so
-            // multiple banners on a page don't all preload and hurt LCP.
-            priority={headingLevel === 'h1'}
-            quality={85}
-            className="object-cover object-center"
-          />
-        )}
+      {/* ── Background layer (z-0, absolute inset) — skipped for flat treatment ── */}
+      {!isFlat && (
+        <div className="absolute inset-0 z-0" aria-hidden="true">
+          {/* Background image */}
+          {hasImage && (
+            <Image
+              src={bgImageSrc!}
+              alt=""
+              fill
+              sizes="100vw"
+              priority={headingLevel === 'h1'}
+              quality={85}
+              className="object-cover object-center"
+            />
+          )}
 
-        {/* Glass mode: extra base darkener so the panel has something to
-            contrast against even when the image is light */}
-        {isGlass && hasImage && (
-          <div className="absolute inset-0 bg-canvas/35" />
-        )}
+          {/* Glass mode: extra base darkener */}
+          {isGlass && hasImage && (
+            <div className="absolute inset-0 bg-canvas/35" />
+          )}
 
-        {/* Scrim: color identity layer (controls how brand/canvas/surface reads) */}
-        <div className={cn('absolute inset-0', scrimClass)} />
+          {/* Scrim: color identity layer */}
+          <div className={cn('absolute inset-0', scrimClass)} />
 
-        {/* Vignette: subtle radial corner darkening; only with an image */}
-        {hasImage && <div className="banner-vignette absolute inset-0" />}
+          {/* Vignette: subtle radial corner darkening; only with an image */}
+          {hasImage && <div className="banner-vignette absolute inset-0" />}
 
-        {/* Brand bloom: radial warm halo centered behind content */}
-        {isBrand && <div className="banner-brand-bloom absolute inset-0" />}
-      </div>
+          {/* Brand bloom: radial warm halo */}
+          {isBrand && <div className="banner-brand-bloom absolute inset-0" />}
+        </div>
+      )}
 
       {/* ── Content layer (z-10) ────────────────────────────────────────── */}
       <BannerEntrance className={cn(

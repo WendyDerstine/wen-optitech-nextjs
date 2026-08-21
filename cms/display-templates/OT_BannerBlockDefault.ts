@@ -16,6 +16,22 @@ export const OT_BannerBlockDefault = displayTemplate({
         brand:   { displayName: 'Brand',            sortOrder: 30 },
       },
     },
+    bgColor: {
+      displayName: 'Flat background color',
+      editor:      'select',
+      sortOrder:   12,
+      choices: {
+        auto:        { displayName: 'Auto — follows Background color (Default)', sortOrder: 10 },
+        canvas:      { displayName: 'Canvas',       sortOrder: 20 },
+        surface:     { displayName: 'Surface',      sortOrder: 30 },
+        brand:       { displayName: 'Brand',        sortOrder: 40 },
+        brand_hover: { displayName: 'Brand Deep',   sortOrder: 50 },
+        accent:      { displayName: 'Accent',       sortOrder: 60 },
+        fg_on_brand: { displayName: 'White / Light',sortOrder: 70 },
+        fg:          { displayName: 'Foreground',   sortOrder: 80 },
+        fg_muted:    { displayName: 'Muted',        sortOrder: 90 },
+      },
+    },
     textColor: {
       displayName: 'Text color',
       editor:      'select',
