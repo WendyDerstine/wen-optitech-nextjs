@@ -18,7 +18,7 @@ const DEMO_CONTENT = {
 export default function BannerPlayground() {
   return (
     <BlockPlayground
-      defaults={{ treatment: 'scrim', color: 'canvas', alignment: 'center', size: 'large', image: 'yes' }}
+      defaults={{ treatment: 'scrim', color: 'canvas', alignment: 'center', size: 'large', image: 'yes', textColor: 'auto' }}
       controls={[
         {
           type: 'buttons',
@@ -27,6 +27,7 @@ export default function BannerPlayground() {
           options: [
             { label: 'Scrim', value: 'scrim' },
             { label: 'Glass', value: 'glass' },
+            { label: 'Flat',  value: 'flat'  },
           ],
         },
         {
@@ -34,9 +35,14 @@ export default function BannerPlayground() {
           key: 'color',
           label: 'Color',
           options: [
-            { label: 'Canvas',  value: 'canvas'  },
-            { label: 'Brand',   value: 'brand'   },
-            { label: 'Surface', value: 'surface' },
+            { label: 'Canvas',   value: 'canvas'      },
+            { label: 'Surface',  value: 'surface'     },
+            { label: 'Brand',    value: 'brand'       },
+            { label: 'Deep',     value: 'brand_hover' },
+            { label: 'Accent',   value: 'accent'      },
+            { label: 'White',    value: 'fg_on_brand' },
+            { label: 'Fg',       value: 'fg'          },
+            { label: 'Muted',    value: 'fg_muted'    },
           ],
         },
         {
@@ -66,12 +72,27 @@ export default function BannerPlayground() {
             { label: 'No',  value: 'no'  },
           ],
         },
+        {
+          type: 'buttons',
+          key: 'textColor',
+          label: 'Text',
+          options: [
+            { label: 'Auto',    value: 'auto'        },
+            { label: 'White',   value: 'fg_on_brand' },
+            { label: 'Default', value: 'fg'          },
+            { label: 'Muted',   value: 'fg_muted'    },
+            { label: 'Brand',   value: 'brand'       },
+            { label: 'Accent',  value: 'accent'      },
+            { label: 'Surface', value: 'surface'     },
+            { label: 'Canvas',  value: 'canvas'      },
+          ],
+        },
       ]}
     >
       {s => (
         <OT_BannerBlock
           content={s.image === 'yes' ? { ...DEMO_CONTENT, backgroundImage: BANNER_IMG } as any : DEMO_CONTENT as any}
-          displaySettings={{ treatment: s.treatment, color: s.color, alignment: s.alignment, size: s.size, imageBlend: 'overlay' }}
+          displaySettings={{ treatment: s.treatment, color: s.color, alignment: s.alignment, size: s.size, imageBlend: 'overlay', textColor: s.textColor }}
         />
       )}
     </BlockPlayground>
