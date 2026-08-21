@@ -21,9 +21,15 @@ export const OT_BannerBlockDefault = displayTemplate({
       editor:      'select',
       sortOrder:   15,
       choices: {
-        auto:  { displayName: 'Auto — follows background (Default)', sortOrder: 10 },
-        light: { displayName: 'Light (white / on-dark backgrounds)', sortOrder: 20 },
-        dark:  { displayName: 'Dark',                                sortOrder: 30 },
+        auto:          { displayName: 'Auto — follows background (Default)', sortOrder: 10 },
+        'fg-on-brand': { displayName: 'White / Light (fg-on-brand)',         sortOrder: 20 },
+        fg:            { displayName: 'Default (fg)',                         sortOrder: 30 },
+        'fg-muted':    { displayName: 'Muted (fg-muted)',                    sortOrder: 40 },
+        brand:         { displayName: 'Brand',                               sortOrder: 50 },
+        'brand-hover': { displayName: 'Brand Deep',                          sortOrder: 60 },
+        accent:        { displayName: 'Accent',                              sortOrder: 70 },
+        surface:       { displayName: 'Surface',                             sortOrder: 80 },
+        canvas:        { displayName: 'Canvas',                              sortOrder: 90 },
       },
     },
     alignment: {

@@ -7,13 +7,17 @@ import BannerEntrance from './BannerEntrance'
 
 // ─── Style option types ───────────────────────────────────────────────────────
 
+export type TextColorOption =
+  | 'auto' | 'brand' | 'brand-hover' | 'accent'
+  | 'fg-on-brand' | 'fg' | 'fg-muted' | 'surface' | 'canvas'
+
 export type BannerStyleOptions = {
   color?:      'canvas' | 'surface' | 'brand'
   alignment?:  'center' | 'left'
   size?:       'large'  | 'compact' | 'display'
   treatment?:  'scrim'  | 'glass'
   imageBlend?: 'overlay' | 'multiply'
-  textColor?:  'auto'   | 'light'   | 'dark'
+  textColor?:  TextColorOption
 }
 
 // ─── CVA configs ─────────────────────────────────────────────────────────────
@@ -217,18 +221,19 @@ export default function BannerBlock({
   const scrimClass = getScrimClass(color, imageBlend, treatment, hasImage)
   const Heading    = headingLevel
 
-  // Decouple text color from background color.
-  // 'light' → use on-brand (white) text regardless of background.
-  // 'dark'  → force light-mode theme token so text-fg resolves to dark text.
-  // 'auto'  → original behavior: text color follows background color.
-  const textVariant: 'canvas' | 'surface' | 'brand' =
-    textColor === 'light' ? 'brand'
-    : textColor === 'dark'  ? 'canvas'
-    : color
-  const dataTheme =
-    textColor === 'dark'    ? ('light' as const)
-    : (isBrand || hasImage) ? ('dark'  as const)
-    : undefined
+  // When textColor is set, twMerge resolves the override over the CVA color class
+  // because both are registered in the same 'text-color' conflict group in lib/utils.ts.
+  const TEXT_OVERRIDE: Partial<Record<TextColorOption, string>> = {
+    brand:          'text-brand',
+    'brand-hover':  'text-brand-hover',
+    accent:         'text-accent',
+    'fg-on-brand':  'text-fg-on-brand',
+    fg:             'text-fg',
+    'fg-muted':     'text-fg-muted',
+    surface:        'text-surface',
+    canvas:         'text-canvas',
+  }
+  const textOverride = textColor !== 'auto' ? TEXT_OVERRIDE[textColor] : undefined
 
   // ── Content elements (shared between scrim and glass layouts) ──────────────
   // When an image sits behind the label, accent-as-text is hard to read, so the
@@ -249,27 +254,27 @@ export default function BannerBlock({
       // out as text on the light canvas — so .banner-eyebrow-pill promotes it to
       // a filled accent pill with fg-on-accent text (rule in globals.css). The
       // nested span lets the pill hug the text while the <p> stays centered.
-      <p className={cn('banner-eyebrow', eyebrowCva({ color: textVariant }))} {...pa('eyebrow')}>
+      <p className={cn('banner-eyebrow', eyebrowCva({ color }), textOverride)} {...pa('eyebrow')}>
         <span className="banner-eyebrow-pill inline-flex items-center rounded-ot-control text-label uppercase tracking-label font-semibold">
           {eyebrow}
         </span>
       </p>
     ) : (
-      <p className={cn('banner-eyebrow', eyebrowCva({ color: textVariant }))} {...pa('eyebrow')}>
+      <p className={cn('banner-eyebrow', eyebrowCva({ color }), textOverride)} {...pa('eyebrow')}>
         {eyebrow}
       </p>
     )
   ) : null
 
   const headingEl = (
-    <Heading className={cn('banner-heading', headingCva({ color: textVariant, size }))} {...pa('heading')}>
+    <Heading className={cn('banner-heading', headingCva({ color, size }), textOverride)} {...pa('heading')}>
       {heading}
     </Heading>
   )
 
   const bodyEl = body ? (
     <div
-      className={cn('banner-body', bodyCva({ color: textVariant }))}
+      className={cn('banner-body', bodyCva({ color }), textOverride)}
       {...pa('body')}
     >
       <RichText content={body} />
@@ -300,7 +305,7 @@ export default function BannerBlock({
   return (
     <section
       className={sectionCva({ size })}
-      data-theme={dataTheme}
+      data-theme={isBrand || hasImage ? 'dark' : undefined}
     >
 
       {/* ── Background layer (z-0, absolute inset) ─────────────────────── */}

@@ -71,9 +71,14 @@ export default function BannerPlayground() {
           key: 'textColor',
           label: 'Text',
           options: [
-            { label: 'Auto',  value: 'auto'  },
-            { label: 'Light', value: 'light' },
-            { label: 'Dark',  value: 'dark'  },
+            { label: 'Auto',    value: 'auto'        },
+            { label: 'White',   value: 'fg-on-brand'  },
+            { label: 'Default', value: 'fg'           },
+            { label: 'Muted',   value: 'fg-muted'     },
+            { label: 'Brand',   value: 'brand'        },
+            { label: 'Accent',  value: 'accent'       },
+            { label: 'Surface', value: 'surface'      },
+            { label: 'Canvas',  value: 'canvas'       },
           ],
         },
       ]}
