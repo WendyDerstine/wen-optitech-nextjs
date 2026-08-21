@@ -15,6 +15,7 @@ export const OT_BannerBlock = contentType({
       enum: [
         { value: 'scrim', displayName: 'Scrim (Default)' },
         { value: 'glass', displayName: 'Glass panel' },
+        { value: 'flat',  displayName: 'Flat (solid color, no overlay)' },
       ],
       group: 'OT_Content',
       sortOrder: 5,
