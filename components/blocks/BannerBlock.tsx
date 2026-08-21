@@ -8,8 +8,8 @@ import BannerEntrance from './BannerEntrance'
 // ─── Style option types ───────────────────────────────────────────────────────
 
 export type TextColorOption =
-  | 'auto' | 'brand' | 'brand-hover' | 'accent'
-  | 'fg-on-brand' | 'fg' | 'fg-muted' | 'surface' | 'canvas'
+  | 'auto' | 'brand' | 'brand_hover' | 'accent'
+  | 'fg_on_brand' | 'fg' | 'fg_muted' | 'surface' | 'canvas'
 
 export type BannerStyleOptions = {
   color?:      'canvas' | 'surface' | 'brand'
@@ -224,14 +224,14 @@ export default function BannerBlock({
   // When textColor is set, twMerge resolves the override over the CVA color class
   // because both are registered in the same 'text-color' conflict group in lib/utils.ts.
   const TEXT_OVERRIDE: Partial<Record<TextColorOption, string>> = {
-    brand:          'text-brand',
-    'brand-hover':  'text-brand-hover',
-    accent:         'text-accent',
-    'fg-on-brand':  'text-fg-on-brand',
-    fg:             'text-fg',
-    'fg-muted':     'text-fg-muted',
-    surface:        'text-surface',
-    canvas:         'text-canvas',
+    brand:         'text-brand',
+    brand_hover:   'text-brand-hover',
+    accent:        'text-accent',
+    fg_on_brand:   'text-fg-on-brand',
+    fg:            'text-fg',
+    fg_muted:      'text-fg-muted',
+    surface:       'text-surface',
+    canvas:        'text-canvas',
   }
   const textOverride = textColor !== 'auto' ? TEXT_OVERRIDE[textColor] : undefined
 
