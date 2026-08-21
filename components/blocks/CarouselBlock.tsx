@@ -88,8 +88,8 @@ function FullBleedSlide({ slide }: { slide: CarouselSlideData }) {
         className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"
       />
       {/* Text content */}
-      <div className="absolute inset-0 flex items-center">
-        <div className="px-8 md:px-16 max-w-xl">
+      <div className="absolute inset-0 flex items-center px-8 md:px-16">
+        <div className="w-full max-w-lg">
           {slide.eyebrow && (
             <p className="text-label tracking-label uppercase font-semibold text-white/70 mb-2">
               {slide.eyebrow}
@@ -101,7 +101,7 @@ function FullBleedSlide({ slide }: { slide: CarouselSlideData }) {
             </h3>
           )}
           {slide.body && (
-            <p className="text-sm md:text-base leading-relaxed text-white/80 mb-6 max-w-md">
+            <p className="text-sm md:text-base leading-relaxed text-white/80 mb-6">
               {slide.body}
             </p>
           )}
