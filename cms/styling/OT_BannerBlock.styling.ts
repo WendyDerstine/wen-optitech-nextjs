@@ -7,7 +7,6 @@ export function getBannerStyles(s: Record<string, string | boolean>): BannerStyl
     alignment:  (s.alignment  ?? 'center')  as BannerStyleOptions['alignment'],
     size:       (s.size       ?? 'large')   as BannerStyleOptions['size'],
     imageBlend: (s.imageBlend ?? 'overlay') as BannerStyleOptions['imageBlend'],
-    bgColor:    (s.bgColor    ?? 'auto')    as PaletteOption,
     textColor:  (s.textColor  ?? 'auto')    as PaletteOption,
   }
 }

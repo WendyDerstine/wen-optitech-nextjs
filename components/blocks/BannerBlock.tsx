@@ -12,11 +12,13 @@ export type PaletteOption =
   | 'fg_on_brand' | 'fg' | 'fg_muted' | 'surface' | 'canvas'
 
 export type TextColorOption = PaletteOption
-export type BgColorOption   = PaletteOption
+
+export type BannerColorOption =
+  | 'canvas' | 'surface' | 'brand' | 'brand_hover' | 'accent'
+  | 'fg_on_brand' | 'fg' | 'fg_muted'
 
 export type BannerStyleOptions = {
-  color?:      'canvas' | 'surface' | 'brand'
-  bgColor?:    BgColorOption
+  color?:      BannerColorOption
   alignment?:  'center' | 'left'
   size?:       'large'  | 'compact' | 'display'
   treatment?:  'scrim'  | 'glass'   | 'flat'
@@ -211,7 +213,6 @@ export default function BannerBlock({
 }: BannerBlockProps) {
   const {
     color      = 'canvas',
-    bgColor    = 'auto',
     alignment  = 'center',
     size       = 'large',
     treatment  = 'scrim',
@@ -219,16 +220,22 @@ export default function BannerBlock({
     textColor  = 'auto',
   } = styleOptions
 
+  // Colors whose backgrounds require dark-mode text (white/light text)
+  const DARK_COLORS = new Set<BannerColorOption>(['brand', 'brand_hover', 'accent', 'fg', 'fg_muted'])
+  const isDarkBg   = DARK_COLORS.has(color)
+  // Map extended color palette to the 3-value CVA variant used by text/button classes
+  const cvaColor   = (color === 'surface' ? 'surface' : isDarkBg ? 'brand' : 'canvas') as 'canvas' | 'surface' | 'brand'
+
   const isGlass    = treatment === 'glass'
   const isFlat     = treatment === 'flat'
-  const isBrand    = color === 'brand'
+  const isBrand    = color === 'brand'  // for bloom/glass-brand effects only
   const isCentered = alignment === 'center'
   const hasImage   = Boolean(bgImageSrc)
-  const scrimClass = getScrimClass(color, imageBlend, treatment, hasImage)
+  const scrimClass = getScrimClass(cvaColor, imageBlend, treatment, hasImage)
   const Heading    = headingLevel
 
   // ── Flat treatment: solid background, no overlays ─────────────────────────
-  const BG_CLASS: Partial<Record<BgColorOption, string>> = {
+  const BG_CLASS: Record<BannerColorOption, string> = {
     brand:       'bg-brand',
     brand_hover: 'bg-brand-hover',
     accent:      'bg-accent',
@@ -238,16 +245,10 @@ export default function BannerBlock({
     surface:     'bg-surface',
     canvas:      'bg-canvas',
   }
-  const BG_FALLBACK: Record<string, string> = { canvas: 'bg-canvas', surface: 'bg-surface', brand: 'bg-brand' }
-  const FLAT_DARK   = new Set(['brand', 'brand_hover', 'accent', 'fg', 'fg_muted'])
-  const flatBgClass = isFlat
-    ? (bgColor !== 'auto' ? BG_CLASS[bgColor] : BG_FALLBACK[color])
-    : undefined
+  const flatBgClass = isFlat ? BG_CLASS[color] : undefined
   const dataTheme = isFlat
-    ? (bgColor !== 'auto'
-        ? FLAT_DARK.has(bgColor) ? ('dark' as const) : ('light' as const)
-        : isBrand ? ('dark' as const) : undefined)
-    : (isBrand || hasImage) ? ('dark' as const) : undefined
+    ? (isDarkBg ? ('dark' as const) : ('light' as const))
+    : (isDarkBg || hasImage) ? ('dark' as const) : undefined
 
   // When textColor is set, twMerge resolves the override over the CVA color class
   // because both are registered in the same 'text-color' conflict group in lib/utils.ts.
@@ -276,33 +277,33 @@ export default function BannerBlock({
           {eyebrow}
         </span>
       </p>
-    ) : (isCentered && !isBrand) ? (
+    ) : (isCentered && !isDarkBg) ? (
       // Centered canvas/surface banner: plain accent text in dark mode (good
       // contrast on the dark canvas), but in LIGHT mode a bright accent washes
       // out as text on the light canvas — so .banner-eyebrow-pill promotes it to
       // a filled accent pill with fg-on-accent text (rule in globals.css). The
       // nested span lets the pill hug the text while the <p> stays centered.
-      <p className={cn('banner-eyebrow', eyebrowCva({ color }), textOverride)} {...pa('eyebrow')}>
+      <p className={cn('banner-eyebrow', eyebrowCva({ color: cvaColor }), textOverride)} {...pa('eyebrow')}>
         <span className="banner-eyebrow-pill inline-flex items-center rounded-ot-control text-label uppercase tracking-label font-semibold">
           {eyebrow}
         </span>
       </p>
     ) : (
-      <p className={cn('banner-eyebrow', eyebrowCva({ color }), textOverride)} {...pa('eyebrow')}>
+      <p className={cn('banner-eyebrow', eyebrowCva({ color: cvaColor }), textOverride)} {...pa('eyebrow')}>
         {eyebrow}
       </p>
     )
   ) : null
 
   const headingEl = (
-    <Heading className={cn('banner-heading', headingCva({ color, size }), textOverride)} {...pa('heading')}>
+    <Heading className={cn('banner-heading', headingCva({ color: cvaColor, size }), textOverride)} {...pa('heading')}>
       {heading}
     </Heading>
   )
 
   const bodyEl = body ? (
     <div
-      className={cn('banner-body', bodyCva({ color }), textOverride)}
+      className={cn('banner-body', bodyCva({ color: cvaColor }), textOverride)}
       {...pa('body')}
     >
       <RichText content={body} />
@@ -315,12 +316,12 @@ export default function BannerBlock({
       isCentered ? 'justify-center' : 'justify-start',
     )}>
       {primaryCta && (
-        <Link href={primaryCta.href} className={primaryCtaCva({ color })} {...pa('primaryCtaLabel')}>
+        <Link href={primaryCta.href} className={primaryCtaCva({ color: cvaColor })} {...pa('primaryCtaLabel')}>
           {primaryCta.label}
         </Link>
       )}
       {secondaryCta && (
-        <Link href={secondaryCta.href} className={secondaryCtaCva({ color })} {...pa('secondaryCtaLabel')}>
+        <Link href={secondaryCta.href} className={secondaryCtaCva({ color: cvaColor })} {...pa('secondaryCtaLabel')}>
           {secondaryCta.label}
         </Link>
       )}
@@ -383,8 +384,8 @@ export default function BannerBlock({
             isCentered
               ? `items-center text-center ${isDisplay ? 'max-w-250' : 'max-w-160'} w-full`
               : `items-start text-left  ${isDisplay ? 'max-w-225' : 'max-w-140'} w-full`,
-            isBrand             ? 'banner-glass-brand'
-            : color === 'surface' ? 'banner-glass-surface'
+            isBrand              ? 'banner-glass-brand'
+            : cvaColor === 'surface' ? 'banner-glass-surface'
             : 'banner-glass',
           )}>
             {eyebrowEl}
