@@ -29,7 +29,7 @@ export type BannerStyleOptions = {
 // ─── CVA configs ─────────────────────────────────────────────────────────────
 
 const sectionCva = cva(
-  'relative overflow-hidden flex items-center border-y border-fg/5',
+  'relative overflow-hidden flex items-center',
   {
     variants: {
       size: {
@@ -333,7 +333,7 @@ export default function BannerBlock({
 
   return (
     <section
-      className={cn(sectionCva({ size }), flatBgClass, isFlat && 'border-transparent')}
+      className={cn(sectionCva({ size }), !isFlat && 'border-y border-fg/5', flatBgClass)}
       data-theme={dataTheme}
     >
 
