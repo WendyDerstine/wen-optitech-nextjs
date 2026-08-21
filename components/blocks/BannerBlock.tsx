@@ -13,6 +13,7 @@ export type BannerStyleOptions = {
   size?:       'large'  | 'compact' | 'display'
   treatment?:  'scrim'  | 'glass'
   imageBlend?: 'overlay' | 'multiply'
+  textColor?:  'auto'   | 'light'   | 'dark'
 }
 
 // ─── CVA configs ─────────────────────────────────────────────────────────────
@@ -206,6 +207,7 @@ export default function BannerBlock({
     size       = 'large',
     treatment  = 'scrim',
     imageBlend = 'overlay',
+    textColor  = 'auto',
   } = styleOptions
 
   const isGlass    = treatment === 'glass'
@@ -214,6 +216,19 @@ export default function BannerBlock({
   const hasImage   = Boolean(bgImageSrc)
   const scrimClass = getScrimClass(color, imageBlend, treatment, hasImage)
   const Heading    = headingLevel
+
+  // Decouple text color from background color.
+  // 'light' → use on-brand (white) text regardless of background.
+  // 'dark'  → force light-mode theme token so text-fg resolves to dark text.
+  // 'auto'  → original behavior: text color follows background color.
+  const textVariant: 'canvas' | 'surface' | 'brand' =
+    textColor === 'light' ? 'brand'
+    : textColor === 'dark'  ? 'canvas'
+    : color
+  const dataTheme =
+    textColor === 'dark'    ? ('light' as const)
+    : (isBrand || hasImage) ? ('dark'  as const)
+    : undefined
 
   // ── Content elements (shared between scrim and glass layouts) ──────────────
   // When an image sits behind the label, accent-as-text is hard to read, so the
@@ -234,27 +249,27 @@ export default function BannerBlock({
       // out as text on the light canvas — so .banner-eyebrow-pill promotes it to
       // a filled accent pill with fg-on-accent text (rule in globals.css). The
       // nested span lets the pill hug the text while the <p> stays centered.
-      <p className={cn('banner-eyebrow', eyebrowCva({ color }))} {...pa('eyebrow')}>
+      <p className={cn('banner-eyebrow', eyebrowCva({ color: textVariant }))} {...pa('eyebrow')}>
         <span className="banner-eyebrow-pill inline-flex items-center rounded-ot-control text-label uppercase tracking-label font-semibold">
           {eyebrow}
         </span>
       </p>
     ) : (
-      <p className={cn('banner-eyebrow', eyebrowCva({ color }))} {...pa('eyebrow')}>
+      <p className={cn('banner-eyebrow', eyebrowCva({ color: textVariant }))} {...pa('eyebrow')}>
         {eyebrow}
       </p>
     )
   ) : null
 
   const headingEl = (
-    <Heading className={cn('banner-heading', headingCva({ color, size }))} {...pa('heading')}>
+    <Heading className={cn('banner-heading', headingCva({ color: textVariant, size }))} {...pa('heading')}>
       {heading}
     </Heading>
   )
 
   const bodyEl = body ? (
     <div
-      className={cn('banner-body', bodyCva({ color }))}
+      className={cn('banner-body', bodyCva({ color: textVariant }))}
       {...pa('body')}
     >
       <RichText content={body} />
@@ -285,7 +300,7 @@ export default function BannerBlock({
   return (
     <section
       className={sectionCva({ size })}
-      data-theme={isBrand || hasImage ? 'dark' : undefined}
+      data-theme={dataTheme}
     >
 
       {/* ── Background layer (z-0, absolute inset) ─────────────────────── */}

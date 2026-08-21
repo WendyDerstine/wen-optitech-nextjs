@@ -16,6 +16,16 @@ export const OT_BannerBlockDefault = displayTemplate({
         brand:   { displayName: 'Brand',            sortOrder: 30 },
       },
     },
+    textColor: {
+      displayName: 'Text color',
+      editor:      'select',
+      sortOrder:   15,
+      choices: {
+        auto:  { displayName: 'Auto — follows background (Default)', sortOrder: 10 },
+        light: { displayName: 'Light (white / on-dark backgrounds)', sortOrder: 20 },
+        dark:  { displayName: 'Dark',                                sortOrder: 30 },
+      },
+    },
     alignment: {
       displayName: 'Content alignment',
       editor:      'select',

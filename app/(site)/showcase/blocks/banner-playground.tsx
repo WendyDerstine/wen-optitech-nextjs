@@ -18,7 +18,7 @@ const DEMO_CONTENT = {
 export default function BannerPlayground() {
   return (
     <BlockPlayground
-      defaults={{ treatment: 'scrim', color: 'canvas', alignment: 'center', size: 'large', image: 'yes' }}
+      defaults={{ treatment: 'scrim', color: 'canvas', alignment: 'center', size: 'large', image: 'yes', textColor: 'auto' }}
       controls={[
         {
           type: 'buttons',
@@ -66,12 +66,22 @@ export default function BannerPlayground() {
             { label: 'No',  value: 'no'  },
           ],
         },
+        {
+          type: 'buttons',
+          key: 'textColor',
+          label: 'Text',
+          options: [
+            { label: 'Auto',  value: 'auto'  },
+            { label: 'Light', value: 'light' },
+            { label: 'Dark',  value: 'dark'  },
+          ],
+        },
       ]}
     >
       {s => (
         <OT_BannerBlock
           content={s.image === 'yes' ? { ...DEMO_CONTENT, backgroundImage: BANNER_IMG } as any : DEMO_CONTENT as any}
-          displaySettings={{ treatment: s.treatment, color: s.color, alignment: s.alignment, size: s.size, imageBlend: 'overlay' }}
+          displaySettings={{ treatment: s.treatment, color: s.color, alignment: s.alignment, size: s.size, imageBlend: 'overlay', textColor: s.textColor }}
         />
       )}
     </BlockPlayground>
