@@ -9,6 +9,7 @@ import { MotionObserver } from "@/components/providers/MotionObserver";
 import { OptimizelyTracking } from "@/components/tracking/OptimizelyTracking";
 import { getSiteSettings, getRequestDomain, buildThemeCSS, getRequestLocale } from '@/lib/optimizely'
 import Script from 'next/script'
+import OnPageEditBridge from './(draft)/OnPageEditBridge'
 
 // Weights are limited to the set the product UI actually renders:
 // 300 (light — stat values, banner lede), 400 (body), 500 (medium — nav/UI),
@@ -234,6 +235,7 @@ export default async function RootLayout({
           {children}
           <MotionObserver />
         </ThemeProvider>
+        {isPreview && <OnPageEditBridge />}
         {/* FX boot + ODP pageview tracking (client). Self-guards on window.zaius
             / the SDK key, so rendering it when only one of the two is set is safe. */}
         {(odpPublicKey || fxSdkKey) && <OptimizelyTracking />}
