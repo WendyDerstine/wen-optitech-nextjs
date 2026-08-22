@@ -1,5 +1,4 @@
 import Script from 'next/script'
-import OnPageEditBridge from './OnPageEditBridge'
 
 export const dynamic  = 'force-dynamic'
 export const revalidate = 0
@@ -12,7 +11,6 @@ export default function DraftLayout({ children }: { children: React.ReactNode })
   return (
     <>
       {cmsUrl && <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />}
-      <OnPageEditBridge />
       {children}
     </>
   )
