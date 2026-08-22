@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 
 declare global {
   interface Window {
@@ -16,6 +17,8 @@ type ContentSavedMessage = {
 }
 
 export default function OnPageEdit() {
+  const router = useRouter()
+
   useEffect(() => {
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -23,6 +26,7 @@ export default function OnPageEdit() {
     function handleContentSaved(msg: ContentSavedMessage) {
       const { properties = [] } = msg
 
+      // Instantly patch text/html properties in the DOM for snappiness.
       for (const prop of properties) {
         const selector = `[data-epi-property-name="${CSS.escape(prop.name)}"]`
         document
@@ -33,8 +37,10 @@ export default function OnPageEdit() {
             if (prop.value != null) el.innerHTML = prop.value
           })
       }
-      // Navigation after saves is handled by PreviewComponent via the
-      // optimizely:cms:contentSaved event, which carries a fresh preview token.
+
+      // Always refresh server components so display template setting changes
+      // (color, treatment, textColor, etc.) re-render without a full page reload.
+      router.refresh()
     }
 
     function trySubscribe() {
