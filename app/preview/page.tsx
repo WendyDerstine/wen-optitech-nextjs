@@ -16,6 +16,7 @@ import Footer from '@/components/layout/Footer'
 import Script from 'next/script'
 import { redirect } from 'next/navigation'
 import { ExternalPreviewLinkPanel } from '@/components/preview/ExternalPreviewLinkPanel'
+import OnPageEditBridge from '@/app/(draft)/OnPageEditBridge'
 
 export const dynamic  = 'force-dynamic'
 export const revalidate = 0
@@ -280,6 +281,7 @@ async function PreviewPage({ searchParams }: Props) {
         />
       )}
       <NextPreviewComponent />
+      <OnPageEditBridge />
 
       {/* CMS-side external preview link — above all site chrome */}
       {externalPreviewUrl && (
