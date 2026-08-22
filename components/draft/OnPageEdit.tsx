@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 declare global {
@@ -24,28 +24,35 @@ export default function OnPageEdit() {
     let timer: ReturnType<typeof setTimeout> | undefined
 
     function handleContentSaved(msg: ContentSavedMessage) {
-      const { properties = [] } = msg
+      console.log('[OnPageEdit] contentSaved fired', msg)
+      const { properties = [] } = (msg as any)?.detail ?? msg
 
-      // Instantly patch text/html properties in the DOM for snappiness.
       for (const prop of properties) {
         const selector = `[data-epi-property-name="${CSS.escape(prop.name)}"]`
         document
           .querySelectorAll<HTMLElement>(selector)
           .forEach(el => {
-            // Block containers manage their own on-page editing — skip their descendants.
             if (el.closest('[is-on-page-editing-block-container]')) return
             if (prop.value != null) el.innerHTML = prop.value
           })
       }
 
-      // Always refresh server components so display template setting changes
-      // (color, treatment, textColor, etc.) re-render without a full page reload.
       router.refresh()
     }
 
+    // New DOM CustomEvent API (dispatched by some versions of communicationinjector.js)
+    function handleNewEvent(e: Event) {
+      handleContentSaved((e as CustomEvent).detail ?? {})
+    }
+
+    window.addEventListener('optimizely:cms:contentSaved', handleNewEvent)
+    console.log('[OnPageEdit] listening for optimizely:cms:contentSaved')
+
+    // Old epi API — poll until communicationinjector.js defines window.epi
     function trySubscribe() {
       if (cancelled) return
       if (window.epi?.subscribe) {
+        console.log('[OnPageEdit] window.epi found, subscribing to contentSaved')
         window.epi.subscribe('contentSaved', handleContentSaved)
       } else {
         timer = setTimeout(trySubscribe, 100)
@@ -57,6 +64,7 @@ export default function OnPageEdit() {
     return () => {
       cancelled = true
       clearTimeout(timer)
+      window.removeEventListener('optimizely:cms:contentSaved', handleNewEvent)
       window.epi?.unsubscribe?.('contentSaved', handleContentSaved)
     }
   }, [])
