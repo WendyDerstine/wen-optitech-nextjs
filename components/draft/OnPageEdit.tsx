@@ -3,15 +3,6 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-declare global {
-  interface Window {
-    epi?: {
-      subscribe:   (event: string, cb: (msg: any) => void) => void
-      unsubscribe: (event: string, cb: (msg: any) => void) => void
-    }
-  }
-}
-
 type ContentSavedMessage = {
   properties?: Array<{ name: string; value: any }>
 }
@@ -20,12 +11,8 @@ export default function OnPageEdit() {
   const router = useRouter()
 
   useEffect(() => {
-    let cancelled = false
-    let timer: ReturnType<typeof setTimeout> | undefined
-
     function handleContentSaved(msg: ContentSavedMessage) {
-      console.log('[OnPageEdit] contentSaved fired', msg)
-      const { properties = [] } = (msg as any)?.detail ?? msg
+      const { properties = [] } = msg
 
       for (const prop of properties) {
         const selector = `[data-epi-property-name="${CSS.escape(prop.name)}"]`
@@ -40,41 +27,36 @@ export default function OnPageEdit() {
       router.refresh()
     }
 
-    // New DOM CustomEvent API (dispatched by some versions of communicationinjector.js)
+    // The CMS sends a raw postMessage with id:'contentSaved' and a previewUrl
+    // containing the new version + preview token. communicationinjector.js does
+    // NOT translate this into window.epi events — so we handle it directly.
+    function handleMessage(e: MessageEvent) {
+      if (e.data?.id !== 'contentSaved') return
+      const previewUrl: string | undefined =
+        e.data?.data?.previewUrl ?? e.data?.message?.previewUrl
+      if (previewUrl) {
+        try {
+          const url = new URL(previewUrl)
+          router.push(url.pathname + url.search)
+        } catch {
+          router.refresh()
+        }
+      } else {
+        handleContentSaved(e.data?.data ?? e.data?.message ?? {})
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+
+    // Fallback: newer SDK versions dispatch this CustomEvent
     function handleNewEvent(e: Event) {
       handleContentSaved((e as CustomEvent).detail ?? {})
     }
-
     window.addEventListener('optimizely:cms:contentSaved', handleNewEvent)
-    console.log('[OnPageEdit] listening for optimizely:cms:contentSaved')
-
-    // Catch raw postMessages from the CMS frame to see what protocol it uses
-    function handleMessage(e: MessageEvent) {
-      if (e.data && typeof e.data === 'object') {
-        console.log('[OnPageEdit] postMessage received:', JSON.stringify(e.data))
-      }
-    }
-    window.addEventListener('message', handleMessage)
-
-    // Old epi API — poll until communicationinjector.js defines window.epi
-    function trySubscribe() {
-      if (cancelled) return
-      if (window.epi?.subscribe) {
-        console.log('[OnPageEdit] window.epi found, subscribing to contentSaved')
-        window.epi.subscribe('contentSaved', handleContentSaved)
-      } else {
-        timer = setTimeout(trySubscribe, 100)
-      }
-    }
-
-    trySubscribe()
 
     return () => {
-      cancelled = true
-      clearTimeout(timer)
-      window.removeEventListener('optimizely:cms:contentSaved', handleNewEvent)
       window.removeEventListener('message', handleMessage)
-      window.epi?.unsubscribe?.('contentSaved', handleContentSaved)
+      window.removeEventListener('optimizely:cms:contentSaved', handleNewEvent)
     }
   }, [])
 
