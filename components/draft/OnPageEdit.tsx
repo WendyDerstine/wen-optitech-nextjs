@@ -48,6 +48,14 @@ export default function OnPageEdit() {
     window.addEventListener('optimizely:cms:contentSaved', handleNewEvent)
     console.log('[OnPageEdit] listening for optimizely:cms:contentSaved')
 
+    // Catch raw postMessages from the CMS frame to see what protocol it uses
+    function handleMessage(e: MessageEvent) {
+      if (e.data && typeof e.data === 'object') {
+        console.log('[OnPageEdit] postMessage received:', JSON.stringify(e.data))
+      }
+    }
+    window.addEventListener('message', handleMessage)
+
     // Old epi API — poll until communicationinjector.js defines window.epi
     function trySubscribe() {
       if (cancelled) return
@@ -65,6 +73,7 @@ export default function OnPageEdit() {
       cancelled = true
       clearTimeout(timer)
       window.removeEventListener('optimizely:cms:contentSaved', handleNewEvent)
+      window.removeEventListener('message', handleMessage)
       window.epi?.unsubscribe?.('contentSaved', handleContentSaved)
     }
   }, [])
