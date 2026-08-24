@@ -27,7 +27,7 @@ export default function CarouselBlock({
   slides,
   styleOptions,
 }: CarouselBlockProps) {
-  const { slideLayout, transition, controls, autoplay, loop, peek, gap, color } = styleOptions
+  const { slideLayout, overlay, transition, controls, autoplay, loop, peek, gap, color } = styleOptions
 
   if (slides.length === 0) return null
 
@@ -59,7 +59,7 @@ export default function CarouselBlock({
         {slides.map((slide, i) =>
           slideLayout === 'split'
             ? <SplitSlide key={i} slide={slide} color={color} />
-            : <FullBleedSlide key={i} slide={slide} />
+            : <FullBleedSlide key={i} slide={slide} overlay={overlay} />
         )}
       </SliderRow>
     </section>
@@ -69,7 +69,7 @@ export default function CarouselBlock({
 // ─── Full-bleed slide ─────────────────────────────────────────────────────────
 // Image fills the slide; left-to-right gradient gives the text panel contrast.
 
-function FullBleedSlide({ slide }: { slide: CarouselSlideData }) {
+function FullBleedSlide({ slide, overlay }: { slide: CarouselSlideData; overlay: 'gradient' | 'none' }) {
   return (
     <div className="relative w-full aspect-[16/7] min-h-[280px] overflow-hidden bg-fg/10">
       {slide.imageSrc && (
@@ -82,11 +82,12 @@ function FullBleedSlide({ slide }: { slide: CarouselSlideData }) {
           priority={false}
         />
       )}
-      {/* Gradient overlay — dark left anchor, fades right */}
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"
-      />
+      {overlay === 'gradient' && (
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"
+        />
+      )}
       {/* Text content */}
       <div className="absolute inset-0 flex items-center px-8 md:px-16">
         <div className="w-full max-w-[var(--ot-measure-tight)]">
