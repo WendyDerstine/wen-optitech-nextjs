@@ -71,7 +71,7 @@ export default function CarouselBlock({
 
 function FullBleedSlide({ slide, overlay }: { slide: CarouselSlideData; overlay: 'gradient' | 'none' }) {
   return (
-    <div className="relative w-full aspect-[16/7] min-h-[280px] overflow-hidden bg-fg/10">
+    <div className="relative w-full aspect-[16/7] min-h-[280px] max-h-[560px] overflow-hidden bg-fg/10">
       {slide.imageSrc && (
         <Image
           src={slide.imageSrc}
