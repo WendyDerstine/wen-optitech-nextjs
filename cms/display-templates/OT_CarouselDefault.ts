@@ -18,6 +18,17 @@ export const OT_CarouselDefault = displayTemplate({
       },
     },
 
+    // ── Full-bleed overlay ────────────────────────────────────────────────────
+    overlay: {
+      displayName: 'Image Overlay',
+      editor:      'select',
+      sortOrder:   15,
+      choices: {
+        gradient: { displayName: 'Gradient (Default)', sortOrder: 10 },
+        none:     { displayName: 'None (photo only)',  sortOrder: 20 },
+      },
+    },
+
     // ── Slide transition ──────────────────────────────────────────────────────
     transition: {
       displayName: 'Transition',
