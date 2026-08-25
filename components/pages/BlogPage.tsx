@@ -433,6 +433,7 @@ export default function BlogPage({ content, latestPosts, pa }: Props) {
     headline, subHeadline, topic,
     authorRef, readTime,
     body, featuredImage, featuredVideo, _metadata,
+    pdfUrl, pdfLabel,
   } = content
 
   const blogStyle: BlogStyle = VALID_STYLES.includes(content.blogStyle as BlogStyle)
@@ -536,6 +537,29 @@ export default function BlogPage({ content, latestPosts, pa }: Props) {
           dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(body?.html) }}
         />
       </section>
+
+      {/* ── PDF download link ────────────────────────────────────────────── */}
+      {pdfUrl?.url?.default && (
+        <section className="bg-canvas border-t border-fg/8 py-lg">
+          <div className="mx-auto max-w-5xl px-md">
+            <a
+              href={pdfUrl.url.default}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-sm text-brand font-semibold hover:underline underline-offset-2"
+              {...pa?.('pdfUrl')}
+            >
+              <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-none opacity-70">
+                <path d="M3 2a1 1 0 0 1 1-1h6l3 3v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round"/>
+                <path d="M9 1v3h3" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round"/>
+                <path d="M5 9h6M5 11.5h4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+              </svg>
+              <span {...pa?.('pdfLabel')}>{pdfLabel ?? 'Download PDF'}</span>
+              <span aria-hidden className="text-sm opacity-60 motion-safe:transition-transform duration-150 ease-quick group-hover:translate-x-0.75">↗</span>
+            </a>
+          </div>
+        </section>
+      )}
 
       {/* ── Author bio ───────────────────────────────────────────────────── */}
       {authorRef?.name && (

@@ -56,6 +56,8 @@ export const OT_BlogPage = contentType({
       sortOrder: 70,
     },
     readTime: { type: 'string', isLocalized: true, maxLength: 20, displayName: 'Read Time (e.g. "8 min read")', group: 'OT_Content', sortOrder: 80 },
+    pdfUrl:   { type: 'contentReference', allowedTypes: ['_media'], displayName: 'PDF Document',  description: 'Select a PDF from the media library. When set, a download link appears at the bottom of the article.', group: 'OT_Content', sortOrder: 85 },
+    pdfLabel: { type: 'string', displayName: 'PDF Link Label',    description: 'Text for the PDF link. Defaults to "Download PDF" if blank.', maxLength: 80, group: 'OT_Content', sortOrder: 90 },
 
     // ── SEO / Search & Discovery ──────────────────────────────────────────────
     // Identical field keys to BlankExperience so lib/metadata.ts has one code path.
