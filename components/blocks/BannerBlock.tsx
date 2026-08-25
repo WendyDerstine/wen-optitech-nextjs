@@ -21,7 +21,7 @@ export type BannerStyleOptions = {
   color?:      BannerColorOption
   alignment?:  'center' | 'left'
   size?:       'large'  | 'compact' | 'display'
-  treatment?:  'scrim'  | 'glass'   | 'flat'
+  treatment?:  'scrim'  | 'glass'   | 'flat' | 'none'
   imageBlend?: 'overlay' | 'multiply'
   textColor?:  TextColorOption
 }
@@ -146,6 +146,7 @@ function getScrimClass(
   treatment:   string,
   hasImage:    boolean,
 ): string {
+  if (treatment === 'none') return ''
   if (treatment === 'glass') {
     if (!hasImage) {
       // Rich gradient backdrops — give backdrop-filter tonal variance to frost over.
@@ -228,6 +229,7 @@ export default function BannerBlock({
 
   const isGlass    = treatment === 'glass'
   const isFlat     = treatment === 'flat'
+  const isNone     = treatment === 'none'
   const isBrand    = color === 'brand'  // for bloom/glass-brand effects only
   const isCentered = alignment === 'center'
   const hasImage   = Boolean(bgImageSrc)
@@ -358,14 +360,14 @@ export default function BannerBlock({
             <div className="absolute inset-0 bg-canvas/35" />
           )}
 
-          {/* Scrim: color identity layer */}
-          <div className={cn('absolute inset-0', scrimClass)} />
+          {/* Scrim: color identity layer — omitted for treatment 'none' */}
+          {scrimClass && <div className={cn('absolute inset-0', scrimClass)} />}
 
           {/* Vignette: subtle radial corner darkening; only with an image */}
-          {hasImage && <div className="banner-vignette absolute inset-0" />}
+          {hasImage && !isNone && <div className="banner-vignette absolute inset-0" />}
 
           {/* Brand bloom: radial warm halo */}
-          {isBrand && <div className="banner-brand-bloom absolute inset-0" />}
+          {isBrand && !isNone && <div className="banner-brand-bloom absolute inset-0" />}
         </div>
       )}
 
