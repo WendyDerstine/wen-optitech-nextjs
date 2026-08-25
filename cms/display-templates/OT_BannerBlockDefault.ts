@@ -56,6 +56,17 @@ export const OT_BannerBlockDefault = displayTemplate({
         display: { displayName: 'Display',         sortOrder: 30 },
       },
     },
+    treatment: {
+      displayName: 'Image treatment',
+      editor:      'select',
+      sortOrder:   45,
+      choices: {
+        scrim: { displayName: 'Scrim — color overlay (Default)', sortOrder: 10 },
+        glass: { displayName: 'Glass — frosted panel',           sortOrder: 20 },
+        flat:  { displayName: 'Flat — solid color, no image',    sortOrder: 30 },
+        none:  { displayName: 'None — photo only, no overlay',   sortOrder: 40 },
+      },
+    },
     imageBlend: {
       displayName: 'Image blend',
       editor:      'select',
