@@ -29,6 +29,8 @@ export type BlogPageContent = {
   /** Resolved author reference — replaces inline author/authorRole/authorPhoto fields */
   authorRef?:    AuthorData | null
   readTime?:     string
+  pdfUrl?:       { url: { default: string | null } } | null
+  pdfLabel?:     string | null
   // ── SEO / Search & Discovery ──────────────────────────────────────────────
   seoTitle?:         string | null
   seoDescription?:   string | null
@@ -68,6 +70,8 @@ const BLOG_PAGE_QUERY = `
         body { html }
         authorRef { key }
         readTime
+        pdfUrl { url { default } }
+        pdfLabel
         seoTitle
         seoDescription
         canonicalUrl { default }
