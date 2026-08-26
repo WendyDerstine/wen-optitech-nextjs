@@ -37,6 +37,7 @@ export const PRIMARY_FONTS = {
   sora:           { var: 'var(--font-primary-b)', label: 'Sora'              },
   plusJakarta:    { var: 'var(--font-primary-c)', label: 'Plus Jakarta Sans' },
   manrope:        { var: 'var(--font-primary-d)', label: 'Manrope'           },
+  roboto:         { var: 'var(--font-primary-e)', label: 'Roboto'            },
 } as const
 
 export type PrimaryFontKey = keyof typeof PRIMARY_FONTS
