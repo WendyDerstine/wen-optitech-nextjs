@@ -137,23 +137,24 @@ export default async function OptiFormsContainerDataAdapter({ content, displaySe
   const spacingClass = spacingClasses[spacing] ?? spacingClasses.large
   const bgClass      = bgClasses[bg]           ?? ''
 
-  // Prefer whatever the VB composition pipeline already inlined (cheap, no
-  // extra round-trip); fall back to fetching this form's own composition by
-  // key otherwise. `content.composition.nodes` is the field Graph actually
-  // returns for a `_section` — confirmed live — `content.nodes` never is.
+  // Always fetch this form's own composition by key rather than trusting
+  // whatever the page's generic composition query happened to inline for
+  // this nested section. Confirmed live: on a real page, that inline data
+  // includes the row/column structure (this section's own displaySettings-
+  // derived shell) but NOT the leaf fields/buttons inside it — inconsistent
+  // with a direct fetch of the same published content, which returns all of
+  // it. Since the underlying cause is which query built the composition
+  // tree, not whether one exists, the fix is to never depend on the
+  // page-inlined tree for OptiForms — only for the plain scalar fields
+  // (Title/Description/etc.), which are reliable regardless of source.
   let title               = content.Title              ?? undefined
   let description         = content.Description        ?? undefined
   let submitUrl           = content.SubmitUrl?.default ?? undefined
   let confirmationMessage = content.SubmitConfirmationMessage ?? undefined
   let rules: FormDependencyRule[] = content.DependencyRules ?? []
-  let topLevelNodes: any[] = (
-    Array.isArray(content.nodes)               ? content.nodes :
-    Array.isArray(content.__composition?.nodes)? content.__composition.nodes :
-    Array.isArray(content.composition?.nodes)   ? content.composition.nodes :
-    []
-  )
+  let topLevelNodes: any[] = []
 
-  if (topLevelNodes.length === 0 && content._metadata?.key) {
+  if (content._metadata?.key) {
     const fetched = await fetchFormData(content._metadata.key)
     if (fetched) {
       title               = title               ?? fetched.title
@@ -163,6 +164,17 @@ export default async function OptiFormsContainerDataAdapter({ content, displaySe
       rules               = rules.length > 0     ? rules : fetched.rules
       topLevelNodes       = fetched.topLevelNodes
     }
+  }
+
+  // Last-resort fallback: no key at all (e.g. an unsaved draft in the VB
+  // editor) — use whatever the composition pipeline inlined, if anything.
+  if (topLevelNodes.length === 0) {
+    topLevelNodes = (
+      Array.isArray(content.nodes)                ? content.nodes :
+      Array.isArray(content.__composition?.nodes) ? content.__composition.nodes :
+      Array.isArray(content.composition?.nodes)    ? content.composition.nodes :
+      []
+    )
   }
 
   // The Forms editor (unlike a human VB page author) always authors its own
