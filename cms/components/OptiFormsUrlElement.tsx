@@ -1,24 +1,28 @@
 import { getPreviewUtils } from '@optimizely/cms-sdk/react/server'
 import UrlField from '@/components/forms/UrlField'
+import ConditionalField from '@/components/forms/ConditionalField'
 import { parseValidators } from '@/cms/forms/validators'
 
 type Props = { content: any }
 
 export default function OptiFormsUrlElementAdapter({ content }: Props) {
   const { pa } = getPreviewUtils(content)
-  const id = content._metadata?.key ?? 'field'
+  const nodeKey = content.__composition?.key ?? content._metadata?.key ?? 'field'
+  const name = content.SubmissionFieldName || nodeKey
 
   return (
-    <div className="w-full" {...pa(content.__composition)}>
-      <UrlField
-        id={id}
-        name={id}
-        label={content.Label ?? undefined}
-        placeholder={content.Placeholder ?? undefined}
-        tooltip={content.Tooltip ?? undefined}
-        defaultValue={content.PredefinedValue ?? undefined}
-        required={parseValidators(content.Validators).required}
-      />
-    </div>
+    <ConditionalField nodeKey={nodeKey}>
+      <div className="w-full" {...pa(content.__composition)}>
+        <UrlField
+          id={nodeKey}
+          name={name}
+          label={content.Label ?? undefined}
+          placeholder={content.Placeholder ?? undefined}
+          tooltip={content.Tooltip ?? undefined}
+          defaultValue={content.PredefinedValue ?? undefined}
+          required={parseValidators(content.Validators).required}
+        />
+      </div>
+    </ConditionalField>
   )
 }

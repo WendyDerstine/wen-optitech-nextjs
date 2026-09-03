@@ -13,5 +13,6 @@ export const OptiFormsSelectionElement = contentType({
     AllowMultiSelect:{ type: 'boolean', displayName: 'Allow Multi-Select' },
     Validators:      { type: 'json',    displayName: 'Validators' },
     AutoComplete:    { type: 'string',  displayName: 'Auto Complete' },
+    SubmissionFieldName: { type: 'string', displayName: 'Submission Field Name' },
   },
 })

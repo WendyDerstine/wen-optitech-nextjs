@@ -31,6 +31,7 @@ import type { ContentRecItem }         from '@/components/blocks/ContentRecommen
 import ProductRecommendationsBlock     from '@/components/blocks/ProductRecommendationsBlock'
 import type { ProductRec }             from '@/components/blocks/ProductRecommendationsBlock'
 import OT_ComparisonTableBlock         from '@/cms/components/OT_ComparisonTableBlock'
+import OptiFormsContainerDataAdapter   from '@/cms/components/OptiFormsContainerData'
 import {
   ArrowRight, Zap, ChevronRight, Play, Download,
   Sparkles, Send, Rocket, Star, Plus,
@@ -68,6 +69,7 @@ const BLOCK_SLUGS = [
   'comparison-table',
   'disclosure',
   'token-manager',
+  'forms',
 ] as const
 
 type BlockSlug = typeof BLOCK_SLUGS[number]
@@ -100,6 +102,7 @@ const BLOCK_META: Record<BlockSlug, { label: string; cmsKey: string; description
   'comparison-table': { label: 'ComparisonTableBlock', cmsKey: 'OT_ComparisonTableBlock', description: 'Side-by-side comparison of plans, tiers, or account types. Grouped rows divide the table into named sections. Cells support a Lucide icon, short text, or both — an empty cell renders a dash. One column can be marked as featured to receive the brand-color treatment and a badge. On mobile a column-selector tab bar replaces the full grid, with swipe gesture support.' },
   'disclosure':       { label: 'DisclosureBlock',      cmsKey: 'OT_DisclosureBlock',      description: 'Legal and regulatory disclosures, rate notices, and footnotes. Items are auto-numbered (¹ ² ³ or a b c) — single-item blocks suppress the marker. Two styles: Fine Print (ultra-subtle footnote treatment) and Section (slightly elevated zone). Heading and marker style are content-type properties; no display template settings to configure.' },
   'token-manager':    { label: 'TokenManager',          cmsKey: 'OT_TokenManager',          description: 'Global text-token system. Authors define key–value pairs (e.g. product-name → Advantage Checking); any CMS field that contains {{product-name}} receives the value at render time — in the CMS preview and on published pages. Token keys are language-neutral; values can be translated per locale. Singleton shared block, like ThemeManager.' },
+  'forms':            { label: 'OptiFormsContainerData', cmsKey: 'OptiFormsContainerData',  description: "Built-in Optimizely Forms. Authored entirely in the CMS's Forms editor — text/number/range/choice/selection/textarea/url fields, a submit action, and optional show/hide dependency rules — then dropped onto a page as a section. This demo renders a real form authored in the connected CMS instance, not static mock data." },
 }
 
 export function generateStaticParams() {
@@ -2863,6 +2866,26 @@ function ComparisonTableShowcase() {
   )
 }
 
+// Real content authored in the connected CMS instance — not mock data, so
+// this demo actually proves the OptiForms adapter fetch/render/submit path
+// works end to end against a genuine Optimizely Forms container.
+const FORMS_DEMO_CONTENT_KEY = 'c8f200bda122468993b91aea1a19235f'
+
+function FormsShowcase() {
+  return (
+    <>
+      <BlockHeader slug="forms" />
+      <VariantGroup
+        label="Live form · Form UI Testing"
+        note="Fetched by content key from the connected CMS instance, exactly as it renders when placed on a real page."
+      />
+      <div className="px-md pb-xl lg:px-lg">
+        <OptiFormsContainerDataAdapter content={{ _metadata: { key: FORMS_DEMO_CONTENT_KEY } }} />
+      </div>
+    </>
+  )
+}
+
 export default async function ShowcaseBlockPage({ params }: Props) {
   const { block } = await params
 
@@ -2894,6 +2917,7 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'comparison-table':        return <ComparisonTableShowcase />
     case 'disclosure':              return <><BlockHeader slug="disclosure" /><DisclosurePlayground /></>
     case 'token-manager':           return <><BlockHeader slug="token-manager" /><TokenManagerPlayground /></>
+    case 'forms':                   return <FormsShowcase />
     default:                 return notFound()
   }
 }

@@ -1,5 +1,6 @@
-import { getPreviewUtils, OptimizelyGridSection, OptimizelyComponent } from '@optimizely/cms-sdk/react/server'
+import { getPreviewUtils, OptimizelyGridSection } from '@optimizely/cms-sdk/react/server'
 import FormWrapper from '@/components/forms/FormWrapper'
+import type { FormDependencyRule } from '@/components/forms/FormRulesContext'
 import { getClient } from '@/lib/optimizely'
 
 type Props = {
@@ -27,55 +28,81 @@ const bgClasses: Record<string, string> = {
   surface: 'bg-surface',
 }
 
-// Fragment for form element component data — matches the element types registered in the registry.
-// This is queried against OptiFormsContainerData.composition.grids[].compositionComponentNodes
-// since the form's internal composition uses "grids" (not VB "nodes @recursive").
+// Fields Optimizely Forms exposes per element type — confirmed live against the
+// connected CMS instance via cms_get_content_type_details (the field names on
+// this fragment previously didn't match: Choice had no `SingleChoice` field,
+// Selection had no `Feed` field, Range's step field is `Increment` not `Step`,
+// and Url has no `AutoComplete`).
 const FORM_ELEMENTS_FRAGMENT = `
   __typename
-  _metadata { key }
-  ... on OptiFormsTextboxElement    { Label Placeholder Tooltip PredefinedValue Validators AutoComplete }
-  ... on OptiFormsTextareaElement   { Label Placeholder Tooltip PredefinedValue Validators }
-  ... on OptiFormsChoiceElement     { Label Tooltip AllowMultiSelect SingleChoice Validators }
-  ... on OptiFormsNumberElement     { Label Placeholder Tooltip PredefinedValue Validators }
-  ... on OptiFormsRangeElement      { Label Tooltip Min Max Step PredefinedValue Validators }
-  ... on OptiFormsSelectionElement  { Label Tooltip PredefinedValue Feed Validators }
+  ... on OptiFormsTextboxElement    { Label Placeholder Tooltip PredefinedValue Validators AutoComplete SubmissionFieldName }
+  ... on OptiFormsTextareaElement   { Label Placeholder Tooltip PredefinedValue Validators AutoComplete SubmissionFieldName }
+  ... on OptiFormsChoiceElement     { Label Tooltip AllowMultiSelect Options Validators SubmissionFieldName }
+  ... on OptiFormsNumberElement     { Label Placeholder Tooltip PredefinedValue Validators AutoComplete SubmissionFieldName }
+  ... on OptiFormsRangeElement      { Label Tooltip Min Max Increment PredefinedValue SubmissionFieldName }
+  ... on OptiFormsSelectionElement  { Label Placeholder Tooltip Options AllowMultiSelect AutoComplete Validators SubmissionFieldName }
   ... on OptiFormsSubmitElement     { Label Tooltip }
   ... on OptiFormsResetElement      { Label Tooltip }
-  ... on OptiFormsUrlElement        { Label Placeholder Tooltip PredefinedValue Validators AutoComplete }
+  ... on OptiFormsUrlElement        { Label Placeholder Tooltip PredefinedValue Validators SubmissionFieldName }
 `
 
-// Fetch the form's title, submit metadata, and element composition via Optimizely Content Graph.
-// OptiFormsContainerData is a _section type — its internal elements live in composition.grids,
-// not in the VB-page composition.nodes @recursive. This fetch is the bridge.
-//
-// Schema reference: each grid in composition.grids[] represents a form row and exposes
-// compositionComponentNode with the element data directly.
+// Per-level composition node fields. Matches the field set the SDK itself
+// fetches for VB page composition (see @optimizely/cms-sdk's
+// buildNestedCompositionNodes) — key/nodeType/displayTemplateKey/displaySettings
+// are exactly what OptimizelyGridSection and the registered Row/Column adapters
+// (cms/compositions/Row.tsx, Column.tsx) read. `nodeType` is what actually
+// distinguishes a step ("step") from a row/column — confirmed live: Optimizely
+// Forms tags its own top-level composition node `nodeType: "step"`.
+const NODE_FIELDS = '__typename key nodeType displayTemplateKey displaySettings { key value }'
+
+// Optimizely Forms composition is 4 levels deep (step → row → column → field),
+// matching the depth the SDK itself hard-codes for VB composition generally —
+// confirmed both by live introspection of a real form and by the SDK's own
+// source (@optimizely/cms-sdk's @recursive directive is a documented no-op
+// workaround on the Graph server today; the SDK hand-nests to depth 4 instead).
+// A CompositionComponentNode fragment is included at every level since a field
+// can in principle sit directly under any of them, not only the deepest.
+function componentFragment(): string {
+  return `... on CompositionComponentNode { component { ${FORM_ELEMENTS_FRAGMENT} } }`
+}
+function nodesQuery(remainingDepth: number): string {
+  if (remainingDepth <= 0) return `${NODE_FIELDS} ${componentFragment()}`
+  return `
+    ${NODE_FIELDS}
+    ${componentFragment()}
+    ... on CompositionStructureNode { nodes { ${nodesQuery(remainingDepth - 1)} } }
+  `
+}
+
+const DEPENDENCY_RULES_FRAGMENT = `
+  DependencyRules {
+    TargetElement
+    SatisfiedAction
+    ConditionCombination
+    Conditions { DependsOnField ComparisonOperator ComparisonValue }
+  }
+`
+
 async function fetchFormData(contentKey: string): Promise<{
   title: string | undefined
   description: string | undefined
   submitUrl: string | undefined
   confirmationMessage: string | undefined
-  elementNodes: any[]
+  rules: FormDependencyRule[]
+  topLevelNodes: any[]
 } | null> {
   try {
     const data = await getClient().request(
       `query GetFormData($key: String!) {
-        OptiFormsContainerData(
-          where: { _metadata: { key: { eq: $key } } }
-          limit: 1
-        ) {
+        OptiFormsContainerData(where: { _metadata: { key: { eq: $key } } }, limit: 1) {
           items {
             Title
             Description
             SubmitUrl { default }
             SubmitConfirmationMessage
+            ${DEPENDENCY_RULES_FRAGMENT}
             composition {
-              grids {
-                compositionType
-                compositionComponentNode {
-                  ${FORM_ELEMENTS_FRAGMENT}
-                }
-              }
+              nodes { ${nodesQuery(3)} }
             }
           }
         }
@@ -83,20 +110,16 @@ async function fetchFormData(contentKey: string): Promise<{
       { key: contentKey },
     )
 
-    const item = data?.OptiFormsContainerData?.items?.[0]
+    const item = (data as any)?.OptiFormsContainerData?.items?.[0]
     if (!item) return null
-
-    // Flatten grids into element nodes — each grid is a form row with one element
-    const elementNodes: any[] = (item.composition?.grids ?? [])
-      .map((g: any) => g.compositionComponentNode)
-      .filter((n: any) => n?.__typename)
 
     return {
       title:               item.Title ?? undefined,
       description:         item.Description ?? undefined,
       submitUrl:           item.SubmitUrl?.default ?? undefined,
       confirmationMessage: item.SubmitConfirmationMessage ?? undefined,
-      elementNodes,
+      rules:               item.DependencyRules ?? [],
+      topLevelNodes:       item.composition?.nodes ?? [],
     }
   } catch {
     return null
@@ -114,67 +137,95 @@ export default async function OptiFormsContainerDataAdapter({ content, displaySe
   const spacingClass = spacingClasses[spacing] ?? spacingClasses.large
   const bgClass      = bgClasses[bg]           ?? ''
 
-  // VB-page nodes (populated when composition system inlines the form section's child nodes)
-  const compositionNodes: any[] = (
-    Array.isArray(content.nodes)               ? content.nodes :
-    Array.isArray(content.__composition?.nodes)? content.__composition.nodes :
-    []
-  )
-
-  // Form metadata from content object (available when rendered as a typed section)
+  // Prefer whatever the VB composition pipeline already inlined (cheap, no
+  // extra round-trip); fall back to fetching this form's own composition by
+  // key otherwise. `content.composition.nodes` is the field Graph actually
+  // returns for a `_section` — confirmed live — `content.nodes` never is.
   let title               = content.Title              ?? undefined
   let description         = content.Description        ?? undefined
   let submitUrl           = content.SubmitUrl?.default ?? undefined
   let confirmationMessage = content.SubmitConfirmationMessage ?? undefined
+  let rules: FormDependencyRule[] = content.DependencyRules ?? []
+  let topLevelNodes: any[] = (
+    Array.isArray(content.nodes)               ? content.nodes :
+    Array.isArray(content.__composition?.nodes)? content.__composition.nodes :
+    Array.isArray(content.composition?.nodes)   ? content.composition.nodes :
+    []
+  )
 
-  // Element nodes from the grids fetch (used when compositionNodes is empty)
-  let elementNodes: any[] = []
-
-  if (compositionNodes.length === 0 && content._metadata?.key) {
+  if (topLevelNodes.length === 0 && content._metadata?.key) {
     const fetched = await fetchFormData(content._metadata.key)
     if (fetched) {
       title               = title               ?? fetched.title
       description         = description         ?? fetched.description
       submitUrl           = submitUrl           ?? fetched.submitUrl
-      confirmationMessage = confirmationMessage ?? fetched.confirmationMessage
-      elementNodes        = fetched.elementNodes
+      confirmationMessage = confirmationMessage  ?? fetched.confirmationMessage
+      rules               = rules.length > 0     ? rules : fetched.rules
+      topLevelNodes       = fetched.topLevelNodes
     }
   }
+
+  // The Forms editor (unlike a human VB page author) always authors its own
+  // rows/columns with contentSpacing: "none" — confirmed live. Left as-is,
+  // every field renders flush against the next with zero gap. Rows get a
+  // small gap between side-by-side columns (e.g. Reset next to Submit);
+  // columns get a larger gap between stacked fields.
+  const SPACING_OVERRIDE: Record<string, string> = { row: 'small', column: 'large' }
+  function withFieldSpacing(nodes: any[]): any[] {
+    return nodes.map(node => {
+      if (!node || node.__typename !== 'CompositionStructureNode') return node
+      const override = SPACING_OVERRIDE[node.nodeType as string]
+      const settings: any[] = Array.isArray(node.displaySettings) ? node.displaySettings : []
+      const nextSettings = !override ? settings
+        : settings.some(s => s.key === 'contentSpacing')
+          ? settings.map(s => (s.key === 'contentSpacing' && s.value === 'none') ? { ...s, value: override } : s)
+          : [...settings, { key: 'contentSpacing', value: override }]
+      return {
+        ...node,
+        displaySettings: nextSettings,
+        nodes: Array.isArray(node.nodes) ? withFieldSpacing(node.nodes) : node.nodes,
+      }
+    })
+  }
+
+  // Optimizely Forms tags its own step nodes `nodeType: "step"` (confirmed
+  // live). If none are tagged (unexpected shape), treat everything as one
+  // step rather than guessing a split — a single step is always safe.
+  const spacedNodes = withFieldSpacing(topLevelNodes)
+  const stepNodes = spacedNodes.filter(n => n?.nodeType === 'step')
+  const steps = stepNodes.length > 0
+    ? stepNodes
+    : spacedNodes.length > 0
+      ? [{ __typename: 'CompositionStructureNode', key: 'implicit-step', nodeType: 'step', nodes: spacedNodes }]
+      : []
 
   return (
     <section className={`vb:section flex flex-col w-full ${bgClass}`} {...pa(content)}>
       <div className={`flex flex-col flex-1 ${widthClass} ${spacingClass}`}>
-        <FormWrapper
-          title={title}
-          description={description}
-          submitUrl={submitUrl}
-          confirmationMessage={confirmationMessage}
-        >
-          {compositionNodes.length > 0 ? (
-            // Standard VB composition path — form elements provided by the page's composition
-            <OptimizelyGridSection nodes={compositionNodes} />
-          ) : elementNodes.length > 0 ? (
-            // Forms-grids path — elements fetched directly from OptiFormsContainerData.composition.grids
-            <div className="flex flex-col gap-md">
-              {elementNodes.map((node: any) => (
-                <OptimizelyComponent
-                  key={node._metadata?.key ?? node.__typename}
-                  content={{ ...node, __composition: { key: node._metadata?.key } }}
-                />
-              ))}
-            </div>
-          ) : (
-            // Empty state — no form elements configured or form key unavailable
-            <div className="flex flex-col gap-sm">
-              <p className="text-label font-medium text-fg-muted/40 tracking-label uppercase">
-                No form elements configured
-              </p>
-              <p className="text-[11px] text-fg-muted/30 leading-snug max-w-[30ch]">
-                Add form elements in the CMS Forms editor to display them here.
-              </p>
-            </div>
-          )}
-        </FormWrapper>
+        {steps.length > 0 ? (
+          <FormWrapper
+            title={title}
+            description={description}
+            submitUrl={submitUrl}
+            confirmationMessage={confirmationMessage}
+            rules={rules}
+            steps={steps.map(node => (
+              // OptimizelyGridSection only understands 'row'/'column' nodeTypes
+              // (its component-registry lookup crashes on 'step', an unrecognized
+              // value) — so render the step's own children, not the step node.
+              <OptimizelyGridSection key={node.key} nodes={node.nodes ?? []} />
+            ))}
+          />
+        ) : (
+          <div className="flex flex-col gap-sm">
+            <p className="text-label font-medium text-fg-muted/40 tracking-label uppercase">
+              No form elements configured
+            </p>
+            <p className="text-[11px] text-fg-muted/30 leading-snug max-w-[30ch]">
+              Add form elements in the CMS Forms editor to display them here.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   )

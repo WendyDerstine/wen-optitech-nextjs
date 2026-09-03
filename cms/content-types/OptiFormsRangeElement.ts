@@ -12,5 +12,6 @@ export const OptiFormsRangeElement = contentType({
     Min:            { type: 'integer', displayName: 'Minimum' },
     Max:            { type: 'integer', displayName: 'Maximum' },
     Increment:      { type: 'integer', displayName: 'Increment' },
+    SubmissionFieldName: { type: 'string', displayName: 'Submission Field Name' },
   },
 })
