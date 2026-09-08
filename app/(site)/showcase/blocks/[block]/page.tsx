@@ -48,9 +48,12 @@ import QuotePlayground       from '../quote-playground'
 import ImagePlayground       from '../image-playground'
 import VideoPlayground       from '../video-playground'
 import StatPlayground        from '../stat-playground'
+import StatItemPlayground    from '../stat-item-playground'
 import FeatureGridPlayground from '../feature-grid-playground'
+import FeatureItemPlayground from '../feature-item-playground'
 import AccordionPlayground   from '../accordion-playground'
 import TabsPlayground        from '../tabs-playground'
+import TabItemPlayground     from '../tab-item-playground'
 import BannerPlayground      from '../banner-playground'
 import DisclosurePlayground  from '../disclosure-playground'
 import CalloutPlayground      from '../callout-playground'
@@ -62,8 +65,8 @@ import TokenManagerPlayground from '../token-manager-playground'
 
 const BLOCK_SLUGS = [
   'hero', 'card', 'primary-text', 'quote', 'rich-text',
-  'image', 'video', 'stat', 'feature-grid', 'trust-rail',
-  'accordion', 'tabs', 'blog-feed', 'button', 'chart', 'banner', 'resource-library',
+  'image', 'video', 'stat', 'stat-item', 'feature-grid', 'feature-item', 'trust-rail',
+  'accordion', 'tabs', 'tab-item', 'blog-feed', 'button', 'chart', 'banner', 'resource-library',
   'callout', 'divider', 'event-listing', 'practitioner-listing', 'location-listing',
   'content-recommendations', 'product-recommendations',
   'comparison-table',
@@ -83,10 +86,13 @@ const BLOCK_META: Record<BlockSlug, { label: string; cmsKey: string; description
   'image':        { label: 'ImageBlock',         cmsKey: 'OT_ImageBlock',       description: 'Flexible image block with two frame modes, teal brand overlay, inset or below caption, chromatic shadow bloom, and a scroll-triggered wipe reveal. Populate any editorial field (eyebrow, heading, body, CTA) to auto-enable a 55/45 two-column editorial layout with configurable media side.' },
   'video':        { label: 'VideoBlock',         cmsKey: 'OT_VideoBlock',       description: 'YouTube and Vimeo embeds with a branded poster state. Platform thumbnails are auto-fetched; a teal play button replaces the iframe until clicked. Populate any editorial field to auto-enable a 55/45 two-column editorial layout with configurable media side.' },
   'stat':         { label: 'StatBlock',          cmsKey: 'OT_StatBlock',        description: 'Horizontal row of metric callouts. Numbers animate on scroll with a staggered entrance and easeOutQuart count-up. Three color schemes (brand/canvas/surface), glass panel mode, 2–4 columns, optional icons with inline or above placement, and four numeral effects: none, gradient (brand-to-accent diagonal fill), glow (ambient bloom), and shimmer (one-shot highlight sweep on count-up). Effect is a content-type property; all others are display settings.' },
+  'stat-item':    { label: 'StatItemBlock',      cmsKey: 'OT_StatItemBlock',    description: 'A single metric callout as a Visual Builder element — placeable directly in a column (e.g. beside a Card), not just as a full-width section. Element-enabled only, so it never appears alongside Stat Block in the same picker. Value, label, context, icon, and numeral effect are content properties; color/glass/icon placement/animation are display settings.' },
   'feature-grid': { label: 'FeatureGridBlock',   cmsKey: 'OT_FeatureGridBlock', description: 'Grid of feature tiles with optional eyebrow, heading, and CTA. Supports grid and ruled layouts, 2–4 columns, optional icon slots, and stagger entrance animation.' },
+  'feature-item': { label: 'FeatureItemBlock',   cmsKey: 'OT_FeatureItemBlock', description: 'A single feature tile as a Visual Builder element — placeable directly in a column. Element-enabled only, so it never appears alongside Feature Grid Block in the same picker. Headline, body, CTA, and icon are content properties.' },
   'trust-rail':   { label: 'TrustRail',          cmsKey: 'OT_TrustRail',        description: 'Logo trust strip with seamless marquee, staggered fade, or static grid. Mono grayscale + color-on-hover treatment. Logos are CMS-managed content references.' },
   'accordion':    { label: 'AccordionBlock',      cmsKey: 'OT_AccordionBlock',   description: 'Expandable FAQ or content section. Three border styles, three color schemes, single or multiple open mode, and optional default-open first item.' },
   'tabs':         { label: 'TabsBlock',           cmsKey: 'OT_TabsBlock',        description: 'Tabbed content block with underline, pill, or button-group triggers. Top or side tab position. Optional image panel and auto-play.' },
+  'tab-item':     { label: 'TabItemBlock',        cmsKey: 'OT_TabItemBlock',     description: 'A single tab panel as a Visual Builder element. Two or more placed adjacently in the same column merge into one real tab switcher (see cms/compositions/Column.tsx); a lone one still renders in tabbed chrome instead of a bare panel. Element-enabled only, so it never appears alongside Tabs Block in the same picker.' },
   'blog-feed':    { label: 'BlogFeedBlock',       cmsKey: 'OT_BlogFeedBlock',    description: 'CMS-driven blog post grid. Posts are fetched at render time from the connected article root. Three color schemes, 2- or 3-column layout, and three heading sizes.' },
   'button':       { label: 'Button',              cmsKey: 'OT_ButtonBlock',      description: 'Six button variants, three sizes, optional icon slots (leading/trailing). Polymorphic — renders as <button> or <Link> based on the href prop.' },
   'chart':        { label: 'ChartBlock',          cmsKey: 'OT_ChartBlock',       description: 'CMS-driven data visualization block. Five chart types: line, area, bar, bar stacked, and radial gauge. Four color variants, five series color palettes, fully responsive via Recharts.' },
@@ -2898,10 +2904,13 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'image':        return <><BlockHeader slug="image" /><ImagePlayground /></>
     case 'video':        return <><BlockHeader slug="video" /><VideoPlayground /></>
     case 'stat':         return <><BlockHeader slug="stat" /><StatPlayground /></>
+    case 'stat-item':    return <><BlockHeader slug="stat-item" /><StatItemPlayground /></>
     case 'feature-grid': return <><BlockHeader slug="feature-grid" /><FeatureGridPlayground /></>
+    case 'feature-item': return <><BlockHeader slug="feature-item" /><FeatureItemPlayground /></>
     case 'trust-rail':   return <><BlockHeader slug="trust-rail" /><TrustRailPlayground /></>
     case 'accordion':    return <><BlockHeader slug="accordion" /><AccordionPlayground /></>
     case 'tabs':         return <><BlockHeader slug="tabs" /><TabsPlayground /></>
+    case 'tab-item':     return <><BlockHeader slug="tab-item" /><TabItemPlayground /></>
     case 'blog-feed':    return <BlogFeedShowcase />
     case 'button':       return <><BlockHeader slug="button" /><ButtonPlayground /></>
     case 'chart':        return <ChartShowcase />

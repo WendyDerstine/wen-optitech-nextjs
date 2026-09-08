@@ -36,6 +36,21 @@ export type TabsBlockClientProps = {
   heading?:     string
   tabs:         TabItemData[]
   styleOptions: TabsStyleOptions
+  /**
+   * Renders with a single tab instead of requiring 2+. Used by the
+   * standalone OT_TabItemBlock element (isolated, or leading a column-group
+   * of adjacent Tab Items) so a lone tab still renders in tabbed chrome
+   * rather than disappearing. The array-driven OT_TabsBlock section keeps
+   * the normal 2-minimum.
+   */
+  allowSingle?: boolean
+  /**
+   * Per-tab click-to-edit overlay attributes (from getPreviewUtils), indexed
+   * the same as `tabs`. Set when tabs come from independently-editable
+   * composition nodes grouped in a column, so each panel still highlights
+   * for editing even though they render through one merged switcher.
+   */
+  panelEditAttrs?: Array<Record<string, unknown> | undefined>
 }
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
@@ -102,6 +117,8 @@ export default function TabsBlockClient({
   heading,
   tabs,
   styleOptions,
+  allowSingle = false,
+  panelEditAttrs,
 }: TabsBlockClientProps) {
   const {
     tabStyle,
@@ -116,7 +133,7 @@ export default function TabsBlockClient({
   const instanceId    = useId()
   const tabCount      = Math.min(tabs.length, 6)
   const visibleTabs   = tabs.slice(0, tabCount)
-  const isEmpty       = visibleTabs.length < 2
+  const isEmpty       = visibleTabs.length < (allowSingle ? 1 : 2)
 
   const [activeTab,    setActiveTab]    = useState(0)
   const [progressKey,  setProgressKey]  = useState(0)
@@ -279,6 +296,7 @@ export default function TabsBlockClient({
             ref={panelContentRef}
             className={reducedMotion ? undefined : 'tab-panel-enter'}
             data-dir={dir ?? undefined}
+            {...panelEditAttrs?.[activeTab]}
           >
             <PanelContent
               tab={visibleTabs[activeTab]}

@@ -2,6 +2,7 @@ import { ContentProps } from '@optimizely/cms-sdk'
 import { getPreviewUtils }   from '@optimizely/cms-sdk/react/server'
 import { OT_TabsBlock as OT_TabsBlockContentType } from '@/cms/content-types/OT_TabsBlock'
 import { getTabsStyles }     from '@/cms/styling/OT_TabsBlock.styling'
+import { buildTabItemFromContent } from '@/cms/adapters/tabItemData'
 import TabsBlock             from '@/components/blocks/TabsBlock'
 import type { TabItemData }  from '@/components/blocks/TabsBlock'
 
@@ -13,18 +14,9 @@ type Props = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildTabs(content: any, src: (ref: any) => string | undefined): TabItemData[] {
   if (!Array.isArray(content.tabs)) return []
-  return (content.tabs as any[]).map(item => ({
-    tabLabel:  String(item.tabLabel  ?? ''),
-    tabIcon:   item.tabIcon          ?? undefined,
-    heading:   item.heading          ?? undefined,
-    // CMS delivers rich text as { json }; showcase/mock data passes a plain
-    // string or a ready-made imageSrc — accept both shapes.
-    body:      item.body?.json ?? (typeof item.body === 'string' ? item.body : undefined),
-    imageSrc:  src(item.image) ?? item.imageSrc ?? undefined,
-    imageAlt:  item.imageAlt         ?? '',
-    ctaLabel:  item.ctaLabel         ?? undefined,
-    ctaUrl:    item.ctaUrl?.default  ?? item.ctaUrl ?? undefined,
-  })).filter(t => t.tabLabel)
+  return (content.tabs as any[])
+    .map(item => buildTabItemFromContent(item, src))
+    .filter(t => t.tabLabel)
 }
 
 export default function OT_TabsBlockAdapter({ content, displaySettings = {} }: Props) {
