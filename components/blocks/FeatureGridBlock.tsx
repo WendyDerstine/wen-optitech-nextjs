@@ -4,22 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import { usePrefersReducedMotion } from '@/lib/usePrefersReducedMotion'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
-import { ICON_REGISTRY, type LucideIcon } from '@/components/icons/iconRegistry'
 import { ArrowUpRight } from 'lucide-react'
-import { RichText } from '@optimizely/cms-sdk/react/richText'
+import FeatureTile, { type FeatureItem } from './FeatureTile'
 
-// ─── Icon lookup ──────────────────────────────────────────────────────────────
-const ICONS: Record<string, LucideIcon> = { ...ICON_REGISTRY }
-
-// ─── Public types ─────────────────────────────────────────────────────────────
-
-export type FeatureItem = {
-  headline:  string
-  body?:     Parameters<typeof RichText>[0]['content'] | null
-  ctaLabel?: string
-  ctaUrl?:   string
-  icon?:     string   // icon key from display settings
-}
+export type { FeatureItem }
 
 export type FeatureGridStyleOptions = {
   color?:     'canvas' | 'surface' | 'brand'
@@ -83,72 +71,6 @@ const subheadingCva = cva('mt-sm text-body leading-body max-w-(--ot-measure)', {
   defaultVariants: { color: 'canvas' },
 })
 
-const featureHeadlineCva = cva(
-  'text-title leading-title tracking-title font-semibold',
-  {
-    variants: {
-      color: {
-        canvas:  'text-fg',
-        surface: 'text-fg',
-        brand:   'text-fg-on-brand',
-      },
-    },
-    defaultVariants: { color: 'canvas' },
-  },
-)
-
-const featureBodyCva = cva('mt-xs text-body leading-body [&>p]:m-0 [&>p+p]:mt-xs', {
-  variants: {
-    color: {
-      canvas:  'text-fg-muted',
-      surface: 'text-fg-muted',
-      brand:   'text-fg-on-brand/70',
-    },
-  },
-  defaultVariants: { color: 'canvas' },
-})
-
-const featureCtaCva = cva(
-  'inline-flex items-center gap-xs mt-sm min-h-[44px] text-label tracking-label font-semibold uppercase transition-opacity duration-150 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current',
-  {
-    variants: {
-      color: {
-        canvas:  'text-brand',
-        surface: 'text-brand',
-        brand:   'text-fg-on-brand',
-      },
-    },
-    defaultVariants: { color: 'canvas' },
-  },
-)
-
-const featureCardCva = cva(
-  // feature-card-lift (globals.css) owns resting shadow + transition for transform,
-  // box-shadow, and border-color — so hover:border-* here gets animated for free.
-  'feature-card-lift rounded-ot-surface border p-lg',
-  {
-    variants: {
-      color: {
-        canvas:  'bg-surface border-fg/10 hover:border-fg/22',
-        surface: 'bg-fg/6 border-fg/10 hover:border-fg/22',
-        brand:   'bg-fg-on-brand/10 border-fg-on-brand/15 hover:border-fg-on-brand/30',
-      },
-    },
-    defaultVariants: { color: 'canvas' },
-  },
-)
-
-const iconCva = cva('flex-shrink-0', {
-  variants: {
-    color: {
-      canvas:  'text-brand',
-      surface: 'text-brand',
-      brand:   'text-fg-on-brand/80',
-    },
-  },
-  defaultVariants: { color: 'canvas' },
-})
-
 const sectionCtaCva = cva(
   'inline-flex items-center gap-xs min-h-[44px] text-label tracking-label font-semibold uppercase transition-opacity duration-150 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current',
   {
@@ -165,7 +87,6 @@ const sectionCtaCva = cva(
 
 // ─── Animation constants ──────────────────────────────────────────────────────
 
-const ENTER_MS   = 500
 const STAGGER_MS = 80
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -197,21 +118,17 @@ export default function FeatureGridBlock({
     animate   = true,
   } = styleOptions
 
+  // Shared entrance trigger — every tile enters off one observer on the
+  // section, staggered by index, rather than each tile observing itself.
   const ref = useRef<HTMLElement>(null)
-  const [shouldAnim, setShouldAnim] = useState(false)
-  const [entered,    setEntered]    = useState(false)
-  const prefersReducedMotion = usePrefersReducedMotion()
+  const [entered, setEntered] = useState(false)
+  const prefersReducedMotion  = usePrefersReducedMotion()
 
   useEffect(() => {
-    const willAnimate = animate && !prefersReducedMotion
-
-    setShouldAnim(willAnimate)
-
-    if (!willAnimate) {
+    if (!animate || prefersReducedMotion) {
       setEntered(true)
       return
     }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -271,86 +188,22 @@ export default function FeatureGridBlock({
         )}
         role="list"
       >
-        {features.map((feature, i) => {
-          const Icon      = feature.icon ? ICONS[feature.icon] : null
-          const showIcon  = iconStyle !== 'none' && !!Icon
-          const staggerMs = i * STAGGER_MS
-
-          const itemStyle: React.CSSProperties = shouldAnim
-            ? {
-                opacity:   entered ? 1 : 0,
-                transform: entered ? 'none' : 'translateY(1rem)',
-                transition: entered
-                  ? [
-                      `opacity ${ENTER_MS}ms var(--ot-ease-kinetic) ${staggerMs}ms`,
-                      `transform ${ENTER_MS}ms var(--ot-ease-kinetic) ${staggerMs}ms`,
-                    ].join(', ')
-                  : 'none',
-              }
-            : {}
-
-          return (
-            <li
-              key={i}
-              className={cn(
-                layout === 'ruled' && [
-                  'border-t pt-md pb-lg',
-                  ruledBorderClass,
-                ],
-                layout === 'grid' && featureCardCva({ color }),
-              )}
-              style={itemStyle}
-            >
-              {/* ── Structural icon: tiled container above headline ─── */}
-              {showIcon && iconStyle === 'structural' && (
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'inline-flex items-center justify-center w-10 h-10 mb-md rounded-ot-control',
-                    color === 'brand' ? 'bg-fg-on-brand/10' : 'bg-fg/8',
-                    iconCva({ color }),
-                  )}
-                >
-                  <Icon size={20} strokeWidth={1.5} />
-                </span>
-              )}
-
-              {/* ── Headline — with accent icon inline ──────────────── */}
-              <div
-                className={cn(
-                  showIcon && iconStyle === 'accent' && 'flex items-start gap-xs',
-                )}
-              >
-                {showIcon && iconStyle === 'accent' && (
-                  <span
-                    aria-hidden="true"
-                    className={cn(iconCva({ color }), 'mt-[0.2em] flex-shrink-0')}
-                  >
-                    <Icon size={16} strokeWidth={2} />
-                  </span>
-                )}
-                <h3 className={featureHeadlineCva({ color })}>
-                  {feature.headline}
-                </h3>
-              </div>
-
-              {/* ── Body (rich text HTML) ────────────────────────────── */}
-              {feature.body && (
-                <div className={featureBodyCva({ color })}>
-                  <RichText content={feature.body} />
-                </div>
-              )}
-
-              {/* ── Per-feature CTA ──────────────────────────────────── */}
-              {feature.ctaLabel && feature.ctaUrl && (
-                <a href={feature.ctaUrl} className={featureCtaCva({ color })}>
-                  {feature.ctaLabel}
-                  <ArrowUpRight size={12} strokeWidth={2.5} aria-hidden="true" />
-                </a>
-              )}
-            </li>
-          )
-        })}
+        {features.map((feature, i) => (
+          <li
+            key={i}
+            className={cn(
+              layout === 'ruled' && ['border-t pt-md pb-lg', ruledBorderClass],
+            )}
+          >
+            <FeatureTile
+              feature={feature}
+              styleOptions={{ color, iconStyle, animate }}
+              entered={entered}
+              staggerMs={i * STAGGER_MS}
+              variant={layout === 'grid' ? 'card' : 'bare'}
+            />
+          </li>
+        ))}
       </ul>
 
       {/* ── Section CTA ─────────────────────────────────────────────────── */}

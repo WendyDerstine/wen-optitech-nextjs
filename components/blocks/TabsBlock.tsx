@@ -5,10 +5,12 @@ import type { TabsStyleOptions } from '@/cms/styling/OT_TabsBlock.styling'
 export type { TabItemData }
 
 export type TabsBlockProps = {
-  eyebrow?:     string
-  heading?:     string
-  tabs:         TabItemData[]
-  styleOptions: TabsStyleOptions
+  eyebrow?:        string
+  heading?:        string
+  tabs:            TabItemData[]
+  styleOptions:    TabsStyleOptions
+  allowSingle?:    boolean
+  panelEditAttrs?: Array<Record<string, unknown> | undefined>
 }
 
 export default function TabsBlock(props: TabsBlockProps) {
