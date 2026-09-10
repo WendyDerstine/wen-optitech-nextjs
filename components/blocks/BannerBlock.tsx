@@ -93,7 +93,7 @@ const primaryCtaCva = cva(
       color: {
         canvas:  'bg-accent text-fg-on-accent hover:bg-accent-hover focus-visible:outline-accent',
         surface: 'bg-accent text-fg-on-accent hover:bg-accent-hover focus-visible:outline-accent',
-        brand:   'bg-brand-hover text-fg-on-brand hover:bg-brand focus-visible:outline-fg-on-brand',
+        brand:   'bg-brand-hover text-fg-on-brand focus-visible:outline-fg-on-brand',
       },
     },
     defaultVariants: { color: 'canvas' },
