@@ -508,11 +508,15 @@ function TriggerBar({
     tabStyle === 'buttonGroup' && [
       // rounded-ot-surface ties border-radius to the site's Corner Style axis:
       // 0px on Sharp, 4px on Soft, 10px on Rounded.
+      // Each variant adds an inset shadow so the track reads as a shallow
+      // recessed channel the active chip sits inside (paired with bgActive's
+      // raised-chip shadow below) — the "pressed" half of the pressed/raised
+      // pair this segmented control is built to show.
       'p-1 gap-0.5 rounded-ot-surface',
-      !isGlass && !isBrand && 'bg-fg/[0.07] border border-fg/[0.10]',
-      isBrand  && 'bg-black/25 border border-white/15',
+      !isGlass && !isBrand && 'bg-fg/[0.07] border border-fg/[0.10] shadow-[inset_0_1px_3px_oklch(from_var(--ot-fg)_l_c_h/0.12)]',
+      isBrand  && 'bg-black/25 border border-white/15 shadow-[inset_0_1px_3px_rgba(0,0,0,0.3)]',
       isGlass  && [
-        'bg-black/25 border border-white/15',
+        'bg-black/25 border border-white/15 shadow-[inset_0_1px_3px_rgba(0,0,0,0.3)]',
         '[backdrop-filter:blur(12px)] [-webkit-backdrop-filter:blur(12px)]',
         'isolate',
       ].join(' '),
@@ -779,6 +783,14 @@ function TriggerButton({
   // Segmented track control: chips float inside a tinted container.
   // Active state on dark surfaces (brand/glass) uses a near-white chip
   // with brand-colored text — distinct from pill's solid brand fill.
+  //
+  // The active chip is the "raised" half of the track's pressed/raised pair
+  // (see rowClass's inset track shadow above): a tight neutral contact
+  // shadow for the physical "lifted off the track" cue (occlusion shadow —
+  // deliberately theme-invariant, same convention other components in this
+  // system use for that specific layer) plus a brand-hued ambient glow from
+  // the shared bloom token, so both color branches read as one chromatic
+  // system rather than one branch going flat white.
 
   const bgActive = cn(
     // Slightly raised: shadow layers give depth; translate-y lifts the chip above the track.
@@ -787,12 +799,12 @@ function TriggerButton({
     color === 'canvas' || color === 'surface'
       ? [
           'bg-brand text-fg-on-brand',
-          'shadow-[0_1px_2px_rgba(0,0,0,0.25),0_4px_18px_color-mix(in_oklch,var(--ot-brand)_45%,transparent)]',
+          'shadow-[0_1px_2px_rgba(0,0,0,0.25),0_4px_18px_var(--ot-bloom-brand-ring)]',
           '-translate-y-px',
         ].join(' ')
       : [
           'bg-white/95 text-brand',
-          'shadow-[0_1px_2px_rgba(0,0,0,0.2),0_3px_10px_rgba(255,255,255,0.12)]',
+          'shadow-[0_1px_2px_rgba(0,0,0,0.2),0_4px_18px_var(--ot-bloom-brand-ring)]',
           '-translate-y-px',
         ].join(' '),
   )

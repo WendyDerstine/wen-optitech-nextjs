@@ -181,11 +181,14 @@ export default function MultiSelect({
         className={
           `${idle} inline-flex h-12 items-center gap-sm rounded-ot-control border px-md ` +
           'text-label uppercase tracking-label font-semibold ' +
-          'motion-safe:transition-colors duration-150 ' +
+          'motion-safe:transition-[color,border-color,box-shadow] duration-150 ' +
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ' +
+          // Resting inset reads the trigger as recessed, like the search field;
+          // an active selection (count > 0) adds a brand-hued glow on top,
+          // echoing the segmented control's raised-chip glow.
           (count > 0
-            ? 'border-brand text-fg'
-            : 'border-fg/15 text-fg-muted hover:text-fg hover:border-fg/35')
+            ? 'border-brand text-fg shadow-[inset_0_1px_3px_oklch(from_var(--ot-fg)_l_c_h/0.10),0_0_0_3px_var(--ot-bloom-brand-border)]'
+            : 'border-fg/15 text-fg-muted hover:text-fg hover:border-fg/35 shadow-[inset_0_1px_3px_oklch(from_var(--ot-fg)_l_c_h/0.10)]')
         }
       >
         <span>{label}</span>
