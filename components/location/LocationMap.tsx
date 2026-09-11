@@ -213,7 +213,7 @@ export default function LocationMap({ locations, selectedKey, onSelectKey, onVie
                   <button
                     type="button"
                     onClick={() => onViewDetails(selected)}
-                    className="btn-signal mt-1 inline-flex w-fit items-center gap-1 rounded-ot-control bg-brand px-sm py-1.5 text-label font-semibold uppercase tracking-label text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                    className="mt-1 inline-flex w-fit items-center gap-1 rounded-ot-control bg-brand px-sm py-1.5 text-label font-semibold uppercase tracking-label text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                   >
                     View details
                     <ArrowUpRight size={13} strokeWidth={2.5} aria-hidden />
