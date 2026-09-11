@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import { getClient } from '@/lib/optimizely'
+import { sanitizeCmsHtml } from '@/lib/sanitizeHtml'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -8,7 +9,8 @@ import { getClient } from '@/lib/optimizely'
  * search / filter). Resolved from OT_LocationProfile by the queries below.
  *
  * `details` keeps its `{ html }` shape: the popup and cards strip the HTML to a
- * short preview; a future detail surface could render it in full.
+ * short preview, and the location details modal renders it in full — sanitized
+ * here (toLocationData) so every consumer, preview or full render, is safe.
  *
  * `coordinates` is NOT populated by these queries — OT_LocationProfile stores a
  * free-text address, not lat/lon. The server wrapper geocodes each address via
@@ -82,7 +84,7 @@ function toLocationData(item: any): LocationData {
     locationLabel: item.locationLabel ?? undefined,
     imageUrl:      item.image?.url?.default ?? undefined,
     address:       item.address ?? undefined,
-    details:       item.details?.html ? { html: item.details.html } : undefined,
+    details:       item.details?.html ? { html: sanitizeCmsHtml(item.details.html) } : undefined,
     url:           item._metadata?.url?.default ?? '',
   }
 }

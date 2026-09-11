@@ -16,6 +16,7 @@ import type {
 import LocationCard from '@/components/location/LocationCard'
 import LocationListRow from '@/components/location/LocationListRow'
 import LocationRailCard from '@/components/location/LocationRailCard'
+import LocationDetailsModal from '@/components/location/LocationDetailsModal'
 
 // Mapbox GL needs a browser — never server-render it. The skeleton fills the map
 // column's height (--map-h, set on the grid) so swapping in the real map causes
@@ -133,10 +134,11 @@ function LabelChips({
 export default function LocationListingClient({ locations, styleOptions, mapboxToken, emptyMessage }: Props) {
   const { defaultView, showViewToggle, mapHeight, color, columns, showSearch, showLabelFilter, density } = styleOptions
 
-  const [view, setView]               = useState<LocationListingView>(defaultView)
-  const [query, setQuery]             = useState('')
-  const [label, setLabel]             = useState<string | null>(null)
-  const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [view, setView]                     = useState<LocationListingView>(defaultView)
+  const [query, setQuery]                   = useState('')
+  const [label, setLabel]                   = useState<string | null>(null)
+  const [selectedKey, setSelectedKey]       = useState<string | null>(null)
+  const [detailsLocation, setDetailsLocation] = useState<LocationData | null>(null)
   const prefersReducedMotion          = usePrefersReducedMotion()
   const searchId = useId()
 
@@ -280,6 +282,7 @@ export default function LocationListingClient({ locations, styleOptions, mapboxT
                 locations={results}
                 selectedKey={effectiveSelectedKey}
                 onSelectKey={setSelectedKey}
+                onViewDetails={setDetailsLocation}
                 token={mapboxToken}
                 mapHeight={mapPx}
               />
@@ -303,7 +306,7 @@ export default function LocationListingClient({ locations, styleOptions, mapboxT
         <ul className={`flex flex-col ${density === 'compact' ? 'gap-sm' : 'gap-md'}`}>
           {results.map(l => (
             <li key={l.key}>
-              <LocationListRow location={l} onSurface={onSurface} density={density} />
+              <LocationListRow location={l} onSurface={onSurface} density={density} onOpenDetails={setDetailsLocation} />
             </li>
           ))}
         </ul>
@@ -311,11 +314,13 @@ export default function LocationListingClient({ locations, styleOptions, mapboxT
         <ul className={`grid grid-cols-1 ${GRID_COLS[columns]} ${density === 'compact' ? 'gap-sm' : 'gap-md'}`}>
           {results.map(l => (
             <li key={l.key} className="flex">
-              <LocationCard location={l} density={density} />
+              <LocationCard location={l} density={density} onOpenDetails={setDetailsLocation} />
             </li>
           ))}
         </ul>
       )}
+
+      <LocationDetailsModal location={detailsLocation} onClose={() => setDetailsLocation(null)} />
     </div>
   )
 }

@@ -8,6 +8,9 @@ type Props = {
   location: LocationData
   onSurface?: boolean
   density?: 'comfortable' | 'compact'
+  /** Opens the shared location details modal. Omitted → row renders inert
+      (used by the showcase where no modal host exists). */
+  onOpenDetails?: (location: LocationData) => void
 }
 
 // Compact directory row. A full-height square plate sits flush against the left
@@ -17,11 +20,12 @@ type Props = {
 // brand wash fills the row, the chevron sliding right — a strong reading anchor
 // without a decorative side-stripe (banned by DESIGN.md).
 
-export default function LocationListRow({ location, onSurface = false, density = 'comfortable' }: Props) {
+export default function LocationListRow({ location, onSurface = false, density = 'comfortable', onOpenDetails }: Props) {
   const l       = location
   const name    = l.locationName || 'Location'
   const details = detailsPreview(l.details, 120)
   const compact = density === 'compact'
+  const canOpen = !l.url && !!onOpenDetails
 
   const rowBg = onSurface ? 'bg-canvas' : 'bg-surface'
   const textPad = compact ? 'py-sm pl-sm pr-sm' : 'py-md pl-md pr-md'
@@ -55,7 +59,7 @@ export default function LocationListRow({ location, onSurface = false, density =
         )}
       </div>
 
-      {l.url && (
+      {(l.url || canOpen) && (
         <ChevronRight
           size={16}
           strokeWidth={2}
@@ -67,19 +71,34 @@ export default function LocationListRow({ location, onSurface = false, density =
   )
 
   const className =
-    `group flex items-stretch overflow-hidden rounded-ot-surface ${rowBg} border border-fg/10 ` +
+    `group flex w-full items-stretch overflow-hidden rounded-ot-surface text-left ${rowBg} border border-fg/10 ` +
     'transition-[background-color,border-color] duration-150 ease-[var(--ot-ease-quick)] ' +
     'hover:border-brand/60 hover:bg-brand/4'
 
-  return l.url ? (
-    <a
-      href={l.url}
-      className={`${className} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand`}
-      aria-label={`View ${name}`}
-    >
-      {body}
-    </a>
-  ) : (
-    <div className={className}>{body}</div>
-  )
+  if (l.url) {
+    return (
+      <a
+        href={l.url}
+        className={`${className} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand`}
+        aria-label={`View ${name}`}
+      >
+        {body}
+      </a>
+    )
+  }
+
+  if (canOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenDetails!(location)}
+        className={`${className} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand`}
+        aria-label={`View details for ${name}`}
+      >
+        {body}
+      </button>
+    )
+  }
+
+  return <div className={className}>{body}</div>
 }
