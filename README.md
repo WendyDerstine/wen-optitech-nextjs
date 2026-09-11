@@ -8,11 +8,11 @@ Its primary job is **pre-sales enablement**: solution engineers re-skin and re-c
 
 ## Stack
 
-- **Next.js 16.2.6** — App Router, TypeScript (no Pages Router)
-- **React 19.2.4**
-- **Tailwind CSS v4** — configured via `@import "tailwindcss"` in `app/globals.css`; design tokens live in `styles/tokens.css` (there is no `tailwind.config.*`)
-- **@optimizely/cms-sdk ^2.1.0** — headless content client (Optimizely Graph)
-- **@optimizely/cms-cli ^2.0.0** — syncs TypeScript content-type definitions to the CMS (`yarn cms:push` / `cms:pull`)
+- **Next.js 16.3.5** — App Router, TypeScript (no Pages Router)
+- **React 19.3.0**
+- **Tailwind CSS v4** (4.3.x) — configured via `@import "tailwindcss"` in `app/globals.css`; design tokens live in `styles/tokens.css` (there is no `tailwind.config.*`)
+- **@optimizely/cms-sdk ^2.2.0** — headless content client (Optimizely Graph)
+- **@optimizely/cms-cli ^2.2.0** — syncs TypeScript content-type definitions to the CMS (`yarn cms:push` / `cms:pull`)
 - **Recharts** — powers the ChartBlock data visualizations
 
 ## Getting started
