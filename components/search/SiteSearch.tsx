@@ -1144,7 +1144,7 @@ export default function SiteSearch() {
         <div className="px-md pt-[8px] pb-[10px] border-b border-fg/8 shrink-0">
           <label htmlFor="search-input-compact" className="sr-only">{t('search.inputLabel')}</label>
           <div className="relative">
-            <div className="flex items-center gap-[8px] rounded-ot-control border border-fg/18 bg-fg/5 focus-within:border-brand/55 focus-within:bg-brand/5 px-2.5 py-2.25 transition-colors duration-150">
+            <div className="flex items-center gap-[8px] rounded-ot-control border border-fg/18 bg-fg/5 shadow-[inset_0_1px_3px_oklch(from_var(--ot-fg)_l_c_h/0.12),inset_0_-1px_0_oklch(from_var(--ot-fg)_l_c_h/0.04)] focus-within:border-brand/55 focus-within:bg-brand/5 focus-within:shadow-[inset_0_1px_4px_oklch(from_var(--ot-fg)_l_c_h/0.18),0_0_0_3px_var(--ot-bloom-brand-border)] px-2.5 py-2.25 transition-[border-color,background-color,box-shadow] duration-150">
               <Search size={14} className="shrink-0 text-fg-muted/45" aria-hidden />
               <input
                 ref={inputRef}
