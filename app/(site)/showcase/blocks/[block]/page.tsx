@@ -2568,21 +2568,21 @@ const MOCK_LOCATIONS: LocationData[] = [
     imageUrl: LOC_IMG_HOSPITAL,
     address: '1 Gustave L. Levy Pl, New York, NY 10029',
     details: { html: '<p>Level I trauma center. Emergency department open 24/7. Visitor parking on-site; valet at the main entrance.</p>' },
-    url: '/locations/memorial-medical-center',
+    url: '', // Real OT_LocationProfile records never carry a url — see lib/locations.ts.
     coordinates: { lat: 40.7900, lon: -73.9526 },
   },
   {
     key: 'loc-downtown-clinic', locationName: 'Downtown Health Clinic', locationLabel: 'Clinic',
     address: '462 First Ave, New York, NY 10016',
     details: { html: '<p>Primary and urgent care, Mon–Sat 8am–8pm. Walk-ins welcome. Wheelchair accessible.</p>' },
-    url: '/locations/downtown-health-clinic',
+    url: '',
     coordinates: { lat: 40.7397, lon: -73.9754 },
   },
   {
     key: 'loc-brooklyn-pharmacy', locationName: 'Brooklyn Pharmacy', locationLabel: 'Pharmacy',
     address: '150 55th St, Brooklyn, NY 11220',
     details: { html: '<p>Full-service pharmacy with same-day prescription pickup and immunizations. Drive-through available.</p>' },
-    url: '/locations/brooklyn-pharmacy',
+    url: '',
     coordinates: { lat: 40.6360, lon: -74.0170 },
   },
 
@@ -2592,14 +2592,14 @@ const MOCK_LOCATIONS: LocationData[] = [
     imageUrl: LOC_IMG_HQ,
     address: '1 Financial Center, Boston, MA 02111',
     details: { html: '<p>Global headquarters. Reception on the 12th floor; visitor badges required. Steps from South Station.</p>' },
-    url: '/locations/boston-headquarters',
+    url: '',
     coordinates: { lat: 42.3553, lon: -71.0557 },
   },
   {
     key: 'loc-ny-office', locationName: 'New York Office', locationLabel: 'Office',
     address: '429 11th Ave, New York, NY 10001',
     details: { html: '<p>Sales and customer success teams. Hudson Yards / West Side. By appointment.</p>' },
-    url: '/locations/new-york-office',
+    url: '',
     coordinates: { lat: 40.7550, lon: -74.0020 },
   },
 ]

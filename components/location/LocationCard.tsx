@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react'
+import { MapPin, ArrowUpRight } from 'lucide-react'
 import type { LocationData } from '@/lib/locations'
 import { detailsPreview } from '@/lib/locationFormat'
 import LocationPlate from './LocationPlate'
@@ -7,6 +7,9 @@ import LocationLabelBadge from './LocationLabelBadge'
 type Props = {
   location: LocationData
   density?: 'comfortable' | 'compact'
+  /** Opens the shared location details modal. Omitted → card renders inert
+      (used by the showcase where no modal host exists). */
+  onOpenDetails?: (location: LocationData) => void
 }
 
 // Image-first directory card. A landscape plate (4:3) carries the location
@@ -19,17 +22,19 @@ type Props = {
 // regardless of page theme — the scrim sits over a photo, not the page ground,
 // so it must stay dark in light mode too (mirrors the CardBlock bg treatment).
 
-export default function LocationCard({ location, density = 'comfortable' }: Props) {
-  const l       = location
-  const name    = l.locationName || 'Location'
-  const details = detailsPreview(l.details, 150)
-  const compact = density === 'compact'
+export default function LocationCard({ location, density = 'comfortable', onOpenDetails }: Props) {
+  const l         = location
+  const name      = l.locationName || 'Location'
+  const details   = detailsPreview(l.details, 150)
+  const compact   = density === 'compact'
+  const canOpen   = !l.url && !!onOpenDetails
 
   // Footer slide distance ≈ the revealed block height, so only address + details
-  // are clipped below the card edge at rest.
+  // (+ the "View details" affordance, when present) are clipped below the card
+  // edge at rest.
   const revealClass = compact
-    ? 'motion-safe:translate-y-[2.75rem]'
-    : 'motion-safe:translate-y-[3.25rem]'
+    ? 'motion-safe:translate-y-[3.5rem]'
+    : 'motion-safe:translate-y-[4rem]'
 
   const body = (
     <>
@@ -54,7 +59,8 @@ export default function LocationCard({ location, density = 'comfortable' }: Prop
         className={
           'absolute inset-x-0 bottom-0 z-10 ' +
           revealClass +
-          ' motion-safe:transition-transform motion-safe:duration-500 motion-safe:ease-(--ot-ease-kinetic) motion-safe:group-hover:translate-y-0'
+          ' motion-safe:transition-transform motion-safe:duration-500 motion-safe:ease-(--ot-ease-kinetic) ' +
+          'motion-safe:group-hover:translate-y-0 motion-safe:group-focus-visible:translate-y-0'
         }
       >
         <div aria-hidden className="card-bg-frost absolute inset-0" />
@@ -73,9 +79,16 @@ export default function LocationCard({ location, density = 'comfortable' }: Prop
           )}
 
           {details && (
-            <p className="mt-1 text-pretty text-xs leading-relaxed text-fg/70 line-clamp-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <p className="mt-1 text-pretty text-xs leading-relaxed text-fg/70 line-clamp-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
               {details}
             </p>
+          )}
+
+          {canOpen && (
+            <span className="btn-signal mt-1 inline-flex w-fit items-center gap-1 rounded-ot-control bg-brand px-sm py-1 text-[0.6875rem] font-semibold uppercase tracking-label text-fg-on-brand opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
+              View details
+              <ArrowUpRight size={12} strokeWidth={2.5} aria-hidden />
+            </span>
           )}
         </div>
       </div>
@@ -83,19 +96,32 @@ export default function LocationCard({ location, density = 'comfortable' }: Prop
   )
 
   const className =
-    'location-card group relative block aspect-4/3 w-full overflow-hidden rounded-ot-surface bg-surface ' +
+    'location-card group relative block aspect-4/3 w-full overflow-hidden rounded-ot-surface bg-surface text-left ' +
     'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand'
 
-  return l.url ? (
-    <a
-      href={l.url}
-      data-theme="dark"
-      className={`${className} focus:outline-none`}
-      aria-label={`View ${name}`}
-    >
-      {body}
-    </a>
-  ) : (
+  if (l.url) {
+    return (
+      <a href={l.url} data-theme="dark" className={`${className} focus:outline-none`} aria-label={`View ${name}`}>
+        {body}
+      </a>
+    )
+  }
+
+  if (canOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenDetails!(location)}
+        data-theme="dark"
+        className={`${className} focus:outline-none`}
+        aria-label={`View details for ${name}`}
+      >
+        {body}
+      </button>
+    )
+  }
+
+  return (
     <div data-theme="dark" className={className}>
       {body}
     </div>
