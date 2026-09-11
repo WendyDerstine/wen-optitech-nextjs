@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Critical: Non-standard Next.js version
 
-This project uses **Next.js 16.2.6** with **React 19.2.4** — versions that may differ significantly from your training data. APIs, conventions, and file structure may have changed. Before writing any Next.js code, read the relevant guide in `node_modules/next/dist/docs/`. Heed deprecation notices.
+This project uses **Next.js 16.3.5** with **React 19.3.0** — versions that may differ significantly from your training data. APIs, conventions, and file structure may have changed. Before writing any Next.js code, read the relevant guide in `node_modules/next/dist/docs/`. Heed deprecation notices.
 
 The docs are organized as:
 - `node_modules/next/dist/docs/01-app/` — App Router (used in this project)
@@ -26,11 +26,11 @@ No test runner is configured yet.
 
 ## Stack
 
-- **Next.js 16.2.6** — App Router, TypeScript, no Pages Router
-- **React 19.2.4**
-- **Tailwind CSS v4** — configured via `@import "tailwindcss"` in `globals.css`; theme tokens defined with `@theme inline` (v4 syntax, not `tailwind.config.*`)
-- **@optimizely/cms-sdk ^2.0.0** — headless CMS client; initialize with `GraphClient` using a single app key
-- **@optimizely/cms-cli ^2.0.0** — syncs TypeScript content type definitions to Optimizely CMS; needs `OPTIMIZELY_CMS_CLIENT_ID` / `OPTIMIZELY_CMS_CLIENT_SECRET` in `process.env` (the CLI does not load `.env` files itself — use the `yarn cms:push` / `cms:pull` scripts; see the optimizely-block skill at `.claude/skills/optimizely-block/references/push-checklist.md`)
+- **Next.js 16.3.5** — App Router, TypeScript, no Pages Router
+- **React 19.3.0**
+- **Tailwind CSS v4** (4.3.x) — configured via `@import "tailwindcss"` in `globals.css`; theme tokens defined with `@theme inline` (v4 syntax, not `tailwind.config.*`)
+- **@optimizely/cms-sdk ^2.2.0** — headless CMS client; initialize with `GraphClient` using a single app key
+- **@optimizely/cms-cli ^2.2.0** — syncs TypeScript content type definitions to Optimizely CMS; needs `OPTIMIZELY_CMS_CLIENT_ID` / `OPTIMIZELY_CMS_CLIENT_SECRET` in `process.env` (the CLI does not load `.env` files itself — use the `yarn cms:push` / `cms:pull` scripts; see the optimizely-block skill at `.claude/skills/optimizely-block/references/push-checklist.md`)
 
 ## Architecture
 
