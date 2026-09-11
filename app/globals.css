@@ -1836,6 +1836,46 @@ body {
   margin: var(--ot-space-lg) 0;
 }
 
+/* Tables — pasted or authored markup gets a broadsheet-style default: a
+ * bracketed header row and horizontal-only row dividers, no vertical grid
+ * lines (heavy spreadsheet grids read as generic). Header treatment targets
+ * <th> wherever it appears (inside <thead>, or a bare first <tr> — TinyMCE's
+ * "header row" toggle emits either shape). The :not(:has(th)) fallback below
+ * catches markup with no header signal at all (e.g. pasted straight from a
+ * spreadsheet) by treating the first row as the header, since that's the
+ * near-universal convention for a pasted table. Degrades gracefully without
+ * :has() support: explicit <th> tables still style correctly either way. */
+[data-rich-text] table {
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: var(--ot-text-body);
+  line-height: var(--ot-leading-body);
+  margin: var(--ot-space-lg) 0;
+  border-top: 1px solid oklch(from var(--ot-fg) l c h / 0.2);
+}
+[data-rich-text] th,
+[data-rich-text] td {
+  padding: var(--ot-space-sm) var(--ot-space-md);
+  text-align: left;
+  vertical-align: top;
+  color: var(--ot-fg);
+  border-bottom: 1px solid oklch(from var(--ot-fg) l c h / 0.1);
+}
+[data-rich-text] th,
+[data-rich-text] table:not(:has(th)) tr:first-child td {
+  font-size: var(--ot-text-label);
+  font-weight: 700;
+  letter-spacing: var(--ot-tracking-label);
+  text-transform: uppercase;
+  color: var(--ot-fg-muted);
+  background: oklch(from var(--ot-fg) l c h / 0.04);
+  border-bottom: 1px solid oklch(from var(--ot-fg) l c h / 0.2);
+}
+[data-rich-text] tr:last-child td {
+  border-bottom: none;
+}
+
 /* ── Color: brand background ── */
 [data-rich-text][data-color="brand"] p,
 [data-rich-text][data-color="brand"] li {
@@ -1869,6 +1909,19 @@ body {
 [data-rich-text][data-color="brand"] hr {
   border-top-color: oklch(97% 0.005 195 / 0.2);
 }
+[data-rich-text][data-color="brand"] table {
+  border-top-color: oklch(from var(--ot-fg-on-brand) l c h / 0.3);
+}
+[data-rich-text][data-color="brand"] th,
+[data-rich-text][data-color="brand"] td {
+  color: var(--ot-fg-on-brand);
+  border-bottom-color: oklch(from var(--ot-fg-on-brand) l c h / 0.15);
+}
+[data-rich-text][data-color="brand"] th,
+[data-rich-text][data-color="brand"] table:not(:has(th)) tr:first-child td {
+  background: oklch(from var(--ot-fg-on-brand) l c h / 0.1);
+  border-bottom-color: oklch(from var(--ot-fg-on-brand) l c h / 0.3);
+}
 
 /* ── Color: glass (dark surface, white text) ── */
 [data-rich-text][data-color="glass"] p,
@@ -1895,6 +1948,20 @@ body {
 }
 [data-rich-text][data-color="glass"] hr {
   border-top-color: oklch(97% 0.005 195 / 0.2);
+}
+[data-rich-text][data-color="glass"] table {
+  border-top-color: oklch(97% 0.005 195 / 0.25);
+}
+[data-rich-text][data-color="glass"] th,
+[data-rich-text][data-color="glass"] td {
+  color: oklch(97% 0.005 195 / 0.75);
+  border-bottom-color: oklch(97% 0.005 195 / 0.15);
+}
+[data-rich-text][data-color="glass"] th,
+[data-rich-text][data-color="glass"] table:not(:has(th)) tr:first-child td {
+  color: oklch(97% 0.005 195 / 0.95);
+  background: oklch(97% 0.005 195 / 0.08);
+  border-bottom-color: oklch(97% 0.005 195 / 0.25);
 }
 
 /* ── Size: compact ── */
@@ -1924,6 +1991,11 @@ body {
 }
 [data-rich-text][data-size="compact"] blockquote p {
   font-size: 1rem;
+}
+[data-rich-text][data-size="compact"] th,
+[data-rich-text][data-size="compact"] td {
+  padding: var(--ot-space-xs) var(--ot-space-sm);
+  font-size: 0.9375rem;
 }
 
 /* ── Treatment: lead — intro section (first heading + first paragraph) ──────
