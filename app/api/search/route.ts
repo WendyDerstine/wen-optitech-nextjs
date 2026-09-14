@@ -4,8 +4,27 @@ import { DEFAULT_LOCALE } from '@/lib/i18n/config'
 import type { SearchResult } from '@/lib/search'
 import { formatEventLocation } from '@/lib/eventFormat'
 
+// Named entities TinyMCE commonly emits in authored rich text (curly quotes,
+// dashes, ellipsis) plus the standard XML set. Numeric/hex refs (&#8217; etc.)
+// are handled generically below.
+const HTML_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“',
+  ndash: '–', mdash: '—', hellip: '…',
+}
+
+function decodeEntities(text: string): string {
+  return text.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, ent: string) => {
+    if (ent[0] === '#') {
+      const code = ent[1] === 'x' || ent[1] === 'X' ? parseInt(ent.slice(2), 16) : parseInt(ent.slice(1), 10)
+      return Number.isNaN(code) ? match : String.fromCodePoint(code)
+    }
+    return HTML_ENTITIES[ent] ?? match
+  })
+}
+
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220)
+  return decodeEntities(html.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim().slice(0, 220)
 }
 
 function fulltextClause(semantic: boolean): string {
@@ -186,6 +205,7 @@ function buildLocationProfileQuery(withSiteKey: boolean, semantic: boolean): str
           locationLabel
           image { url { default } }
           address
+          details { html }
         }
       }
     }
@@ -281,7 +301,7 @@ const SETTINGS_TYPES = new Set([
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const q        = (searchParams.get('q') ?? '').trim()
-  const type     = (searchParams.get('type') ?? 'all') as 'all' | 'Blog' | 'Page' | 'Event' | 'Location' | 'Practitioner'
+  const type     = (searchParams.get('type') ?? 'all') as 'all' | 'Blog' | 'Page' | 'Event' | 'Location' | 'Practitioner' | 'Experience'
   const semantic = searchParams.get('semantic') === 'true'
   const limit    = 16
 
@@ -493,6 +513,7 @@ export async function GET(req: NextRequest) {
         const key = item._metadata?.key
         if (!key || seen.has(key)) continue
         seen.add(key)
+        const detailsHtml = (item.details?.html as string | undefined) || undefined
         results.push({
           id:            key,
           title:         item.locationName ?? 'Untitled',
@@ -500,6 +521,7 @@ export async function GET(req: NextRequest) {
           type:          'Location',
           locationBadge: item.locationLabel || undefined,
           address:       item.address || undefined,
+          excerpt:       detailsHtml ? stripHtml(detailsHtml) : undefined,
           imageUrl:      item.image?.url?.default || undefined,
           _track:        withTrackAuth(item._track),
         })
@@ -512,7 +534,10 @@ export async function GET(req: NextRequest) {
   // ── Experience results (typed — enriched with seoDescription / ogImage) ──
   // Runs before the generic _Content query so enriched data wins the seen-Set
   // deduplication; _Content then fills in any remaining non-experience pages.
-  if (type === 'all' || type === 'Page') {
+  // Gated on 'Experience' (what the Topic Hub's "experiences" bucket actually
+  // requests) as well as 'Page' (the typeMap's fallback for any other bucket
+  // content type not listed above).
+  if (type === 'all' || type === 'Page' || type === 'Experience') {
     try {
       const expQuery = buildBlankExperienceQuery(withDomain)
       const data = await getClient().request(expQuery, baseVars)
