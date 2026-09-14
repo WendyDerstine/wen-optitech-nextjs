@@ -69,16 +69,6 @@ const headingCva = cva(
 
 const bodyCva = cva(
   'font-sans font-light text-body leading-body text-pretty max-w-(--ot-measure-tight) [&_p]:mt-0',
-  {
-    variants: {
-      color: {
-        canvas:  'text-fg-muted',
-        surface: 'text-fg-muted',
-        brand:   'text-fg-on-brand/80',
-      },
-    },
-    defaultVariants: { color: 'canvas' },
-  }
 )
 
 const primaryCtaCva = cva(
@@ -261,7 +251,9 @@ export default function BannerBlock({
 
   const bodyEl = body ? (
     <div
-      className={cn('banner-body', bodyCva({ color }))}
+      className={cn('banner-body', bodyCva())}
+      data-rich-text=""
+      data-color={isBrand ? 'brand' : isGlass ? 'glass' : color}
       {...pa('body')}
     >
       <RichText content={body} />
