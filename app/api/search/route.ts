@@ -140,8 +140,41 @@ function buildPractitionerProfileQuery(): string {
           firstName
           lastName
           credentials
+          title
           headshot { url { default } }
           bio { html }
+        }
+      }
+    }
+  `
+}
+
+// Location search — OT_LocationProfile is a URL-less shared component (like
+// OT_PractitionerProfile) but has no linked page to join through, so it is
+// scoped directly by its own queryable `siteKey` field rather than a domain
+// join (mirrors lib/locations.ts's getAllLocations). LocationCard is purely
+// informational and never links out, so no URL resolution is needed here.
+function buildLocationProfileQuery(withSiteKey: boolean): string {
+  const siteKeyVar    = withSiteKey ? ', $siteKey: String' : ''
+  const siteKeyFilter = withSiteKey ? '\n          siteKey: { eq: $siteKey }' : ''
+  return `
+    query SearchLocations($query: String!, $limit: Int!, $locale: String!${siteKeyVar}) {
+      OT_LocationProfile(
+        orderBy: { _ranking: RELEVANCE }
+        where: {
+          _fulltext: { match: $query, fuzzy: true, synonyms: ONE }
+          _metadata: { locale: { eq: $locale } }${siteKeyFilter}
+        }
+        limit: $limit
+        tracking: { phrase: $query, source: "/search" }
+      ) {
+        items {
+          _track
+          _metadata { key }
+          locationName
+          locationLabel
+          image { url { default } }
+          address
         }
       }
     }
@@ -237,7 +270,7 @@ const SETTINGS_TYPES = new Set([
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const q        = (searchParams.get('q') ?? '').trim()
-  const type     = (searchParams.get('type') ?? 'all') as 'all' | 'Blog' | 'Page' | 'Event'
+  const type     = (searchParams.get('type') ?? 'all') as 'all' | 'Blog' | 'Page' | 'Event' | 'Location' | 'Practitioner'
   const semantic = searchParams.get('semantic') === 'true'
   const limit    = 16
 
@@ -291,6 +324,12 @@ export async function GET(req: NextRequest) {
   // so Content Graph handles site isolation natively.
   const withDomain = !allSites && filterBase !== null
   const domainVars = withDomain ? { domain: filterBase } : {}
+
+  // siteKey scoping for URL-less shared components (OT_LocationProfile) that
+  // have no _metadata.url.base to join against — derived from the same
+  // ThemeManager-resolved host as filterBase, minus the https:// prefix.
+  const siteKeyValue = filterBase ? filterBase.replace(/^https?:\/\//, '') : null
+  const withSiteKey  = !allSites && siteKeyValue !== null
 
   // locale is always included — every query builder declares $locale: String!
   const baseVars = { query: q, limit, locale, ...domainVars }
@@ -372,7 +411,7 @@ export async function GET(req: NextRequest) {
   // BlankExperience/_Content blocks so the resolved page keys land in `seen`
   // first — OT_PractitionerPage is an _experience, so the generic _Content
   // fallback would otherwise re-emit it as a bare Page without the headshot.
-  if (type === 'all' || type === 'Page') {
+  if (type === 'all' || type === 'Practitioner') {
     try {
       const profileVars = { query: q, limit, locale }
       const profileData = await getClient().request(buildPractitionerProfileQuery(), profileVars)
@@ -411,19 +450,51 @@ export async function GET(req: NextRequest) {
           const bioHtml     = (profile.bio?.html as string | undefined) || undefined
 
           results.push({
-            id:        pageKey,
+            id:                pageKey,
             title,
-            url:       absoluteUrl(page._metadata.url.default, page._metadata.url.base) as string,
-            type:      'Page',
-            published: page._metadata.published || undefined,
-            excerpt:   bioHtml ? stripHtml(bioHtml) : undefined,
-            imageUrl:  profile.headshot?.url?.default || undefined,
-            _track:    withTrackAuth(profile._track),
+            url:               absoluteUrl(page._metadata.url.default, page._metadata.url.base) as string,
+            type:              'Practitioner',
+            published:         page._metadata.published || undefined,
+            excerpt:           bioHtml ? stripHtml(bioHtml) : undefined,
+            imageUrl:          profile.headshot?.url?.default || undefined,
+            credentials:       credentials || undefined,
+            practitionerTitle: (profile.title as string | undefined) || undefined,
+            _track:            withTrackAuth(profile._track),
           })
         }
       }
     } catch (err) {
       console.error('[search] practitioner query failed:', err)
+    }
+  }
+
+  // ── Location results ─────────────────────────────────────────────────────
+  // OT_LocationProfile is informational only (LocationCard never links out),
+  // so results are emitted with an empty url and scoped by siteKey instead of
+  // a domain/url join — see buildLocationProfileQuery above.
+  if (type === 'all' || type === 'Location') {
+    try {
+      const locationVars = { query: q, limit, locale, ...(withSiteKey ? { siteKey: siteKeyValue } : {}) }
+      const locationQuery = buildLocationProfileQuery(withSiteKey)
+      const data = await getClient().request(locationQuery, locationVars)
+      const items: any[] = (data as any)?.OT_LocationProfile?.items ?? []
+      for (const item of items) {
+        const key = item._metadata?.key
+        if (!key || seen.has(key)) continue
+        seen.add(key)
+        results.push({
+          id:            key,
+          title:         item.locationName ?? 'Untitled',
+          url:           '',
+          type:          'Location',
+          locationBadge: item.locationLabel || undefined,
+          address:       item.address || undefined,
+          imageUrl:      item.image?.url?.default || undefined,
+          _track:        withTrackAuth(item._track),
+        })
+      }
+    } catch (err) {
+      console.error('[search] location query failed:', err)
     }
   }
 
