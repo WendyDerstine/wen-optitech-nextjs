@@ -154,13 +154,24 @@ function buildPractitionerProfileQuery(): string {
 // scoped directly by its own queryable `siteKey` field rather than a domain
 // join (mirrors lib/locations.ts's getAllLocations). LocationCard is purely
 // informational and never links out, so no URL resolution is needed here.
-function buildLocationProfileQuery(withSiteKey: boolean): string {
+//
+// Semantic ranking matters a lot more here than for blogs/practitioners: the
+// only searchable fields are locationName/locationLabel (short proper nouns,
+// e.g. "Monroe Carell Jr. Children's Hospital"), so a literal query like
+// "pediatric" or "knee replacement" has near-zero keyword overlap with the
+// record. Plain RELEVANCE fulltext returns nothing; SEMANTIC ranking is what
+// lets Content Graph match "pediatric" to a hospital named after a children's
+// specialty. Mirrors buildBlogQuery's semantic/non-semantic split.
+function buildLocationProfileQuery(withSiteKey: boolean, semantic: boolean): string {
   const siteKeyVar    = withSiteKey ? ', $siteKey: String' : ''
   const siteKeyFilter = withSiteKey ? '\n          siteKey: { eq: $siteKey }' : ''
+  const ranking       = semantic
+    ? 'orderBy: { _ranking: SEMANTIC, _semanticWeight: 0.3 }'
+    : 'orderBy: { _ranking: RELEVANCE }'
   return `
     query SearchLocations($query: String!, $limit: Int!, $locale: String!${siteKeyVar}) {
       OT_LocationProfile(
-        orderBy: { _ranking: RELEVANCE }
+        ${ranking}
         where: {
           _fulltext: { match: $query, fuzzy: true, synonyms: ONE }
           _metadata: { locale: { eq: $locale } }${siteKeyFilter}
@@ -475,7 +486,7 @@ export async function GET(req: NextRequest) {
   if (type === 'all' || type === 'Location') {
     try {
       const locationVars = { query: q, limit, locale, ...(withSiteKey ? { siteKey: siteKeyValue } : {}) }
-      const locationQuery = buildLocationProfileQuery(withSiteKey)
+      const locationQuery = buildLocationProfileQuery(withSiteKey, semantic)
       const data = await getClient().request(locationQuery, locationVars)
       const items: any[] = (data as any)?.OT_LocationProfile?.items ?? []
       for (const item of items) {
