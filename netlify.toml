@@ -4,6 +4,9 @@
   ignore = "true"
 
 # Branches that should always build on every push (no ignore rule).
+[context.wenopti]
+  ignore = "false"
+
 [context.wenoptieverence]
   ignore = "false"
 
