@@ -94,7 +94,7 @@ export default function BookingPanel({ practitioner }: Props) {
 
   return (
     <section className="bg-canvas">
-      <div className="mx-auto max-w-6xl px-md py-lg lg:px-xl lg:py-2xl">
+      <div className="mx-auto max-w-6xl px-md pt-lg pb-lg lg:px-xl lg:pt-lg lg:pb-2xl">
         {!mounted ? (
           <div className="h-40 animate-pulse rounded-ot-surface bg-fg/5" aria-hidden />
         ) : pending ? (
