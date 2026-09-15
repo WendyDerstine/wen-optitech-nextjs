@@ -21,6 +21,8 @@ export type PracticeAreaData = {
  * shared component with no public URL of its own, so getAllPractitioners maps
  * each record to the OT_PractitionerPage that references it (see below).
  */
+export type BookingInterval = '15' | '30' | '60'
+
 export type PractitionerData = {
   key:            string
   firstName:      string
@@ -37,6 +39,9 @@ export type PractitionerData = {
   languages?:     string
   linkedIn?:      string
   url:            string
+  bookingEnabled?:  boolean
+  bookingTitle?:    string
+  bookingInterval?: BookingInterval
 }
 
 // Same shape — the listing needs every field for search and filtering.
@@ -66,6 +71,9 @@ const PROFILE_FIELDS = `
   officeLocation
   languages
   linkedIn { default }
+  bookingEnabled
+  bookingTitle
+  bookingInterval
 `
 
 const PRACTITIONER_QUERY = `
@@ -141,6 +149,9 @@ function toPractitionerData(item: any, url: string): PractitionerData {
     languages:      item.languages ?? undefined,
     linkedIn:       item.linkedIn?.default ?? undefined,
     url,
+    bookingEnabled:  item.bookingEnabled ?? undefined,
+    bookingTitle:    item.bookingTitle ?? undefined,
+    bookingInterval: (item.bookingInterval as BookingInterval) ?? undefined,
   }
 }
 
