@@ -44,6 +44,9 @@ export default function OT_PractitionerProfileAdapter({ content }: Props) {
     languages:      content.languages ?? undefined,
     linkedIn:       content.linkedIn?.default ?? undefined,
     url:            '',
+    bookingEnabled:  content.bookingEnabled ?? undefined,
+    bookingTitle:    content.bookingTitle ?? undefined,
+    bookingInterval: (content.bookingInterval as PractitionerData['bookingInterval']) ?? undefined,
   }
 
   // Standalone preview shell (Optimizely.md guidance): full-height canvas so the

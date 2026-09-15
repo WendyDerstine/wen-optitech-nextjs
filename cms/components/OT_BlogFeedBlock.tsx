@@ -60,10 +60,16 @@ export default async function OT_BlogFeedBlockAdapter({
   // ── Fetch posts ───────────────────────────────────────────────────────────
   // React cache() dedups this call if multiple Blog Feed blocks appear on the
   // same page with the same locale + root + filter combination.
-  // When an explicit article root path is set, the path filter is the scope —
-  // bypass site-URL scoping so cross-site article folders work correctly.
-  const effectiveSiteBase = articleRootPath ? null : (siteBaseUrl || null)
-  const { posts, topics } = await getBlogFeedPosts(locale, articleRootPath, effectiveSiteBase, topicFilter)
+  // Site-URL scoping always applies, article root or not — the content type's
+  // own description promises articleRoot scopes posts "on the site", and a
+  // bare hierarchical-path-prefix match has no site/domain component, so it
+  // cannot by itself exclude a different site whose content tree happens to
+  // use an overlapping path (e.g. two sites both folder their posts under a
+  // "/health-insights/"-shaped root). Applying both filters together (site
+  // base AND article-root prefix) never wrongly excludes a legitimate
+  // same-site post under the configured root — url.base identifies the site,
+  // hierarchical identifies the sub-path; they're orthogonal.
+  const { posts, topics } = await getBlogFeedPosts(locale, articleRootPath, siteBaseUrl || null, topicFilter)
 
   // ── Display settings ──────────────────────────────────────────────────────
   const color       = String(displaySettings.color       ?? 'canvas')   as BlogFeedColor

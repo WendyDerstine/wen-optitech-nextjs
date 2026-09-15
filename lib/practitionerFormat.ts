@@ -1,4 +1,4 @@
-import type { PractitionerData, PracticeAreaData } from '@/lib/practitioners'
+import type { PractitionerData, PracticeAreaData, BookingInterval } from '@/lib/practitioners'
 
 // Pure presentation helpers shared by the practitioner header, card, row, and
 // directory client. No CMS-SDK imports — safe to use in client components.
@@ -37,6 +37,16 @@ export function bioPreview(bio: { html: string } | undefined, max = 200): string
   const slice = text.slice(0, max)
   const lastSpace = slice.lastIndexOf(' ')
   return (lastSpace > max * 0.6 ? slice.slice(0, lastSpace) : slice).trimEnd() + '…'
+}
+
+/** "15" → "15-minute", "30" → "30-minute", "60" → "1-hour". Defaults to 30 min. */
+export function formatBookingDuration(interval: BookingInterval | undefined): string {
+  switch (interval) {
+    case '15': return '15-minute'
+    case '60': return '1-hour'
+    case '30':
+    default:   return '30-minute'
+  }
 }
 
 /** Parses the comma-separated `languages` field into a clean, de-duplicated list. */

@@ -142,10 +142,47 @@ export const OT_PractitionerProfile = contentType({
       type:         'string',
       maxLength:    120,
       displayName:  'Site Key',
-      description:  'The domain of the site this practitioner belongs to — e.g. "optitech-nextjs-tim.vercel.app". Must match the Front End Domain set in ThemeManager. Used to scope site search and Topic Hub results to the correct site.',
+      description:  'The domain of the site this practitioner belongs to — e.g. "your-site.vercel.app". Must match the Front End Domain set in ThemeManager. Used to scope site search and Topic Hub results to the correct site.',
       group:        'OT_Content',
       sortOrder:    150,
       indexingType: 'queryable',
+    },
+
+    // ── Booking ──────────────────────────────────────────────────────────────
+    // Renders a simulated appointment-request panel in a locked slot beneath
+    // PractitionerHeader (see app/(site)/[...slug]/page.tsx), the same
+    // "always reflects the record" architecture as the header itself. No real
+    // scheduling backend — availability is generated deterministically per
+    // practitioner (lib/bookingAvailability.ts) and requests are held in the
+    // visitor's localStorage (lib/useBookingRequest.ts).
+    bookingEnabled: {
+      type:        'boolean',
+      displayName: 'Enable Booking',
+      description: 'Shows a simulated appointment-booking panel on this practitioner’s page. Off by default.',
+      group:       'OT_Content',
+      sortOrder:   160,
+    },
+    bookingTitle: {
+      type:        'string',
+      isLocalized: true,
+      maxLength:   60,
+      displayName: 'Booking Panel Title',
+      description: 'Heading shown above the calendar — "Book a Consultation", "Schedule an Appointment", "Setup Consultation". Falls back to "Book an Appointment" when blank.',
+      group:       'OT_Content',
+      sortOrder:   170,
+    },
+    bookingInterval: {
+      type:        'string',
+      format:      'selectOne',
+      displayName: 'Session Length',
+      description: 'Length of each bookable time slot. Falls back to 30 minutes when unset.',
+      enum: [
+        { value: '15', displayName: '15 minutes' },
+        { value: '30', displayName: '30 minutes' },
+        { value: '60', displayName: '1 hour' },
+      ],
+      group:       'OT_Content',
+      sortOrder:   180,
     },
   },
 })

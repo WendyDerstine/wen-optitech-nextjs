@@ -12,18 +12,25 @@ export type StatItemBlockProps = {
   effect?:       StatEffect
 }
 
-// Standalone panel treatment — a stat sitting alone in a column needs its own
-// visible boundary (unlike the section's continuous divided row).
-const panelCva = cva('rounded-ot-surface border', {
-  variants: {
-    color: {
-      brand:   'bg-brand-fill border-transparent',
-      canvas:  'bg-surface border-fg/10',
-      surface: 'bg-fg/6 border-fg/10',
+// visible boundary (unlike the section's continuous divided row). The shadow
+// pair reads as a soft raised panel: a faint inner top highlight (the "light
+// catching the near edge" cue) plus the standard brand-hued resting bloom
+// beneath. Kept deliberately restrained — the panel's own bg/border contrast
+// against its ground is untouched, so this adds depth without approaching
+// neumorphism's washed-out, low-contrast signature.
+const panelCva = cva(
+  'rounded-ot-surface border shadow-[inset_0_1px_0_0_oklch(from_var(--ot-fg)_l_c_h/0.08),0_4px_24px_var(--ot-bloom-brand-faint)]',
+  {
+    variants: {
+      color: {
+        brand:   'bg-brand-fill border-transparent',
+        canvas:  'bg-surface border-fg/10',
+        surface: 'bg-fg/6 border-fg/10',
+      },
     },
-  },
-  defaultVariants: { color: 'brand' },
-})
+    defaultVariants: { color: 'brand' },
+  }
+)
 
 function glassPanelClass(color: NonNullable<StatTileStyleOptions['color']>): string {
   if (color === 'surface') return 'banner-glass-surface'

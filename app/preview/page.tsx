@@ -10,6 +10,7 @@ import { resolveNavbarStyle } from '@/lib/theme-axes'
 import { CompositionRenderer } from '@/lib/CompositionRenderer'
 import { getPractitioner } from '@/lib/practitioners'
 import PractitionerHeader from '@/components/practitioner/PractitionerHeader'
+import BookingPanel from '@/components/practitioner/booking/BookingPanel'
 import Header from '@/components/layout/Header'
 import SplitHeader from '@/components/layout/SplitHeader'
 import Footer from '@/components/layout/Footer'
@@ -294,10 +295,13 @@ async function PreviewPage({ searchParams }: Props) {
           <PreviewHeader />
           <main className="flex-1">
             {practitioner && (
-              <PractitionerHeader
-                practitioner={practitioner}
-                profileLabel={content.profileLabel ?? undefined}
-              />
+              <>
+                <PractitionerHeader
+                  practitioner={practitioner}
+                  profileLabel={content.profileLabel ?? undefined}
+                />
+                {practitioner.bookingEnabled && <BookingPanel practitioner={practitioner} />}
+              </>
             )}
             <CompositionRenderer nodes={content.composition.nodes} />
           </main>
