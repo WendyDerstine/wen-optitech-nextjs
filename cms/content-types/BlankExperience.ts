@@ -43,6 +43,7 @@ export const BlankExperience = contentType({
       description: 'A 1–3 sentence plain-language answer to the primary question this page addresses. Used in structured data and as a direct signal to AI answer engines (Perplexity, ChatGPT Browsing, Gemini). Write as if answering the question directly — no marketing language.',
       group: 'OT_SEO',
       sortOrder: 50,
+      indexingType: 'searchable',
     },
     schemaType: {
       type: 'string',

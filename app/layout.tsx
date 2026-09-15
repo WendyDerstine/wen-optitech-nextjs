@@ -170,6 +170,13 @@ export default async function RootLayout({
     ? `window.PeeriusCallbacks=window.PeeriusCallbacks||{track:{type:'home',lang:${JSON.stringify(locale)}},apiVersion:'v1_4',smartRecs:function(j){window.__peeriusRecs=j;window.dispatchEvent(new CustomEvent('peerius:recs',{detail:j}))},info:function(j){window.__peeriusInfo=j}};`
     : null
 
+  // Google Analytics 4 — skipped in preview so the editor never inflates GA data.
+  const rawGaId = (settings?.googleAnalyticsId as string | null | undefined)?.trim()
+  const gaId = !isPreview && rawGaId && /^[A-Za-z0-9-]+$/.test(rawGaId) ? rawGaId : null
+  const gaInit = gaId
+    ? `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',${JSON.stringify(gaId)});`
+    : null
+
   // Content Recommendations (Idio): ia.js builds the visitor profile and sets
   // the `iv` cookie the Content Recommendations block reads server-side.
   const rawIdioClient = (settings?.contentRecsClientId as string | null | undefined)?.trim()
@@ -178,13 +185,6 @@ export default async function RootLayout({
   const idioDeliveryId = !isPreview && rawIdioDelivery && /^\d+$/.test(rawIdioDelivery) ? rawIdioDelivery : null
   const idioConfig = idioClientId && idioDeliveryId
     ? `window._iaq=[['client',${JSON.stringify(idioClientId)}],['delivery',${Number(idioDeliveryId)}],['track','consume']];`
-    : null
-
-  // Google Analytics 4 — skipped in preview so the editor never inflates GA data.
-  const rawGaId = (settings?.googleAnalyticsId as string | null | undefined)?.trim()
-  const gaId = !isPreview && rawGaId && /^[A-Za-z0-9-]+$/.test(rawGaId) ? rawGaId : null
-  const gaInit = gaId
-    ? `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config',${JSON.stringify(gaId)});`
     : null
 
   // Official ODP stub — queues method calls until zaius-min.js loads, so
