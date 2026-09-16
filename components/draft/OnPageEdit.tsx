@@ -1,25 +1,16 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-
-declare global {
-  interface Window {
-    epi?: {
-      subscribe:   (event: string, cb: (msg: any) => void) => void
-      unsubscribe: (event: string, cb: (msg: any) => void) => void
-    }
-  }
-}
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 type ContentSavedMessage = {
   properties?: Array<{ name: string; value: any }>
 }
 
 export default function OnPageEdit() {
-  useEffect(() => {
-    let cancelled = false
-    let timer: ReturnType<typeof setTimeout> | undefined
+  const router = useRouter()
 
+  useEffect(() => {
     function handleContentSaved(msg: ContentSavedMessage) {
       const { properties = [] } = msg
 
@@ -33,27 +24,35 @@ export default function OnPageEdit() {
             if (prop.value != null) el.innerHTML = prop.value
           })
       }
-      // Navigation after saves is handled by PreviewComponent via the
-      // optimizely:cms:contentSaved event, which carries a fresh preview token.
+
+      router.refresh()
     }
 
-    function trySubscribe() {
-      if (cancelled) return
-      if (window.epi?.subscribe) {
-        window.epi.subscribe('contentSaved', handleContentSaved)
+    // communicationinjector.js only bridges this postMessage into the
+    // `optimizely:cms:contentSaved` CustomEvent (what NextPreviewComponent
+    // listens for) when it considered the frame "editable" at epiReady time.
+    // That bridge doesn't reliably engage in the standalone block-preview
+    // iframe (app/(draft)/draft/[version]/block/[key]), so this listens to the
+    // raw postMessage directly instead of depending on it.
+    function handleMessage(e: MessageEvent) {
+      if (e.data?.id !== 'contentSaved') return
+      const previewUrl: string | undefined =
+        e.data?.data?.previewUrl ?? e.data?.message?.previewUrl
+      if (previewUrl) {
+        try {
+          const url = new URL(previewUrl)
+          router.push(url.pathname + url.search)
+        } catch {
+          router.refresh()
+        }
       } else {
-        timer = setTimeout(trySubscribe, 100)
+        handleContentSaved(e.data?.data ?? e.data?.message ?? {})
       }
     }
 
-    trySubscribe()
-
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-      window.epi?.unsubscribe?.('contentSaved', handleContentSaved)
-    }
-  }, [])
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [router])
 
   return null
 }
