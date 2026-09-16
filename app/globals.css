@@ -1923,6 +1923,56 @@ body {
   border-bottom-color: oklch(from var(--ot-fg-on-brand) l c h / 0.3);
 }
 
+/* ── Color: accent background (always-light surface, dark text) ──
+ * Unlike brand/canvas/surface, accent is a constant light, high-chroma
+ * green in both modes, so its contrast token (--ot-fg-on-accent) is dark
+ * and theme-invariant — no light/dark split needed here. */
+[data-rich-text][data-color="accent"] p,
+[data-rich-text][data-color="accent"] li {
+  color: var(--ot-fg-on-accent);
+}
+[data-rich-text][data-color="accent"] h1,
+[data-rich-text][data-color="accent"] h2,
+[data-rich-text][data-color="accent"] h3,
+[data-rich-text][data-color="accent"] h4 {
+  color: var(--ot-fg-on-accent);
+}
+[data-rich-text][data-color="accent"] blockquote {
+  border-color: oklch(from var(--ot-fg-on-accent) l c h / 0.3);
+  background: oklch(from var(--ot-fg-on-accent) l c h / 0.08);
+}
+[data-rich-text][data-color="accent"] blockquote p {
+  color: var(--ot-fg-on-accent);
+}
+[data-rich-text][data-color="accent"] a {
+  color: var(--ot-fg-on-accent);
+  text-decoration-color: oklch(from var(--ot-fg-on-accent) l c h / 0.45);
+}
+[data-rich-text][data-color="accent"] a:hover {
+  color: var(--ot-fg-on-accent);
+  text-decoration-color: var(--ot-fg-on-accent);
+}
+[data-rich-text][data-color="accent"] code {
+  background: oklch(from var(--ot-fg-on-accent) l c h / 0.12);
+  color: var(--ot-fg-on-accent);
+}
+[data-rich-text][data-color="accent"] hr {
+  border-top-color: oklch(from var(--ot-fg-on-accent) l c h / 0.25);
+}
+[data-rich-text][data-color="accent"] table {
+  border-top-color: oklch(from var(--ot-fg-on-accent) l c h / 0.3);
+}
+[data-rich-text][data-color="accent"] th,
+[data-rich-text][data-color="accent"] td {
+  color: var(--ot-fg-on-accent);
+  border-bottom-color: oklch(from var(--ot-fg-on-accent) l c h / 0.15);
+}
+[data-rich-text][data-color="accent"] th,
+[data-rich-text][data-color="accent"] table:not(:has(th)) tr:first-child td {
+  background: oklch(from var(--ot-fg-on-accent) l c h / 0.1);
+  border-bottom-color: oklch(from var(--ot-fg-on-accent) l c h / 0.3);
+}
+
 /* ── Color: glass (dark surface, white text) ── */
 [data-rich-text][data-color="glass"] p,
 [data-rich-text][data-color="glass"] li {
@@ -3607,6 +3657,41 @@ body {
       oklch(from var(--ot-brand) calc(l * 0.76) calc(c * 1.06) h) 100%);
 }
 
+/* Deeper brand backdrop — same construction as .banner-bg-brand-glass, sourced
+   from --ot-brand-hover so the "Brand deep" ground reads visibly darker/richer
+   than plain "Brand" behind the same glass panel. */
+.banner-bg-brandDeep-glass {
+  background:
+    radial-gradient(ellipse 62% 56% at 28% 40%,
+      oklch(from var(--ot-brand-hover) calc(l * 1.20) c h) 0%,
+      transparent 52%),
+    radial-gradient(ellipse 48% 42% at 82% 72%,
+      oklch(from var(--ot-brand-hover) calc(l * 0.85) calc(c * 1.08) h) 0%,
+      transparent 50%),
+    linear-gradient(145deg,
+      oklch(from var(--ot-brand-hover) calc(l * 0.58) calc(c * 0.92) h) 0%,
+      oklch(from var(--ot-brand-hover) calc(l * 0.88) c h) 38%,
+      oklch(from var(--ot-brand-hover) calc(l * 1.10) c h) 65%,
+      oklch(from var(--ot-brand-hover) calc(l * 0.76) calc(c * 1.06) h) 100%);
+}
+
+/* Accent backdrop — accent is a constant light, high-chroma ground (not a
+   dark/light pair like brand), so this stays bright in both modes; the glass
+   panel above it is the darker element here, not the backdrop. */
+.banner-bg-accent-glass {
+  background:
+    radial-gradient(ellipse 62% 56% at 28% 40%,
+      oklch(from var(--ot-accent) calc(l * 1.08) c h) 0%,
+      transparent 52%),
+    radial-gradient(ellipse 48% 42% at 82% 72%,
+      oklch(from var(--ot-accent) calc(l * 0.90) calc(c * 1.05) h) 0%,
+      transparent 50%),
+    linear-gradient(145deg,
+      oklch(from var(--ot-accent) calc(l * 0.82) calc(c * 0.95) h) 0%,
+      oklch(from var(--ot-accent) l c h) 45%,
+      oklch(from var(--ot-accent) calc(l * 1.08) c h) 100%);
+}
+
 /* ── Glass panels ──────────────────────────────────────────────────────────── */
 
 .banner-glass {
@@ -3645,6 +3730,34 @@ body {
     inset 0 1px 0 oklch(from var(--ot-brand) calc(l * 1.50) calc(c * 0.14) h / 0.44);
 }
 
+/* Brand deep glass: same construction as .banner-glass-brand, sourced from
+   --ot-brand-hover to match the deeper backdrop it sits on. */
+.banner-glass-brandDeep {
+  border-radius: var(--ot-radius-surface);
+  background: oklch(from var(--ot-brand-hover) calc(l * 1.35) calc(c * 0.16) h / 0.20);
+  backdrop-filter: blur(34px) saturate(210%);
+  -webkit-backdrop-filter: blur(34px) saturate(210%);
+  border: 1px solid oklch(from var(--ot-brand-hover) l c h / 0.30);
+  box-shadow:
+    0 8px 48px var(--ot-bloom-brand-faint),
+    0 24px 72px oklch(from var(--ot-brand-hover) calc(l * 0.55) c h / 0.18),
+    inset 0 1px 0 oklch(from var(--ot-brand-hover) calc(l * 1.50) calc(c * 0.14) h / 0.44);
+}
+
+/* Accent glass: accent is already the brightest ground in the system, so the
+   panel goes the other way — a dark-tinted (fg-on-accent) smoked pane, giving
+   the dark on-accent text something to sit on that isn't pure flat accent. */
+.banner-glass-accent {
+  border-radius: var(--ot-radius-surface);
+  background: oklch(from var(--ot-fg-on-accent) l c h / 0.10);
+  backdrop-filter: blur(30px) saturate(160%);
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  border: 1px solid oklch(from var(--ot-fg-on-accent) l c h / 0.18);
+  box-shadow:
+    0 8px 40px oklch(from var(--ot-fg-on-accent) l c h / 0.14),
+    inset 0 1px 0 oklch(from var(--ot-accent) calc(l * 1.10) calc(c * 0.5) h / 0.5);
+}
+
 /* Glass over video: motion under glass reads busier than a static photo at
    the same blur level, so video gets a touch more blur + a slightly more
    opaque base to settle the moving image beneath it. Tint/border/shadow
@@ -3665,6 +3778,18 @@ body {
   background: oklch(from var(--ot-brand) calc(l * 1.35) calc(c * 0.16) h / 0.28);
   backdrop-filter: blur(42px) saturate(210%);
   -webkit-backdrop-filter: blur(42px) saturate(210%);
+}
+
+.banner-glass-brandDeep[data-media="video"] {
+  background: oklch(from var(--ot-brand-hover) calc(l * 1.35) calc(c * 0.16) h / 0.28);
+  backdrop-filter: blur(42px) saturate(210%);
+  -webkit-backdrop-filter: blur(42px) saturate(210%);
+}
+
+.banner-glass-accent[data-media="video"] {
+  background: oklch(from var(--ot-fg-on-accent) l c h / 0.16);
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
 }
 
 /* ── Centered banner eyebrow — light-mode accent pill ──────────────────────────

@@ -11,9 +11,11 @@ export const OT_BannerBlockDefault = displayTemplate({
       editor:      'select',
       sortOrder:   10,
       choices: {
-        canvas:  { displayName: 'Canvas (Default)', sortOrder: 10 },
-        surface: { displayName: 'Surface',          sortOrder: 20 },
-        brand:   { displayName: 'Brand',            sortOrder: 30 },
+        canvas:    { displayName: 'Canvas (Default)', sortOrder: 10 },
+        surface:   { displayName: 'Surface',          sortOrder: 20 },
+        brand:     { displayName: 'Brand',            sortOrder: 30 },
+        brandDeep: { displayName: 'Brand deep',       sortOrder: 40 },
+        accent:    { displayName: 'Accent',           sortOrder: 50 },
       },
     },
     alignment: {

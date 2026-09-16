@@ -28,6 +28,7 @@ export default function BannerPlayground() {
           options: [
             { label: 'Scrim', value: 'scrim' },
             { label: 'Glass', value: 'glass' },
+            { label: 'None',  value: 'none'  },
           ],
         },
         {
@@ -35,9 +36,11 @@ export default function BannerPlayground() {
           key: 'color',
           label: 'Color',
           options: [
-            { label: 'Canvas',  value: 'canvas'  },
-            { label: 'Brand',   value: 'brand'   },
-            { label: 'Surface', value: 'surface' },
+            { label: 'Canvas',     value: 'canvas'    },
+            { label: 'Surface',    value: 'surface'   },
+            { label: 'Brand',      value: 'brand'     },
+            { label: 'Brand deep', value: 'brandDeep' },
+            { label: 'Accent',     value: 'accent'    },
           ],
         },
         {
