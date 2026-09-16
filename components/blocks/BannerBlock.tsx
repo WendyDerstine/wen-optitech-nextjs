@@ -9,10 +9,10 @@ import BannerBackgroundVideo from './BannerBackgroundVideo'
 // ─── Style option types ───────────────────────────────────────────────────────
 
 export type BannerStyleOptions = {
-  color?:      'canvas' | 'surface' | 'brand'
+  color?:      'canvas' | 'surface' | 'brand' | 'brandDeep' | 'accent'
   alignment?:  'center' | 'left'
   size?:       'large'  | 'compact' | 'display'
-  treatment?:  'scrim'  | 'glass'
+  treatment?:  'scrim'  | 'glass' | 'none'
   imageBlend?: 'overlay' | 'multiply'
 }
 
@@ -37,9 +37,11 @@ const eyebrowCva = cva(
   {
     variants: {
       color: {
-        canvas:  'text-accent',
-        surface: 'text-accent',
-        brand:   'text-fg-on-brand/70',
+        canvas:    'text-accent',
+        surface:   'text-accent',
+        brand:     'text-fg-on-brand/70',
+        brandDeep: 'text-fg-on-brand/70',
+        accent:    'text-fg-on-accent/70',
       },
     },
     defaultVariants: { color: 'canvas' },
@@ -51,9 +53,11 @@ const headingCva = cva(
   {
     variants: {
       color: {
-        canvas:  'text-fg',
-        surface: 'text-fg',
-        brand:   'text-fg-on-brand',
+        canvas:    'text-fg',
+        surface:   'text-fg',
+        brand:     'text-fg-on-brand',
+        brandDeep: 'text-fg-on-brand',
+        accent:    'text-fg-on-accent',
       },
       size: {
         large:   'text-[clamp(2.5rem,5vw,3.75rem)]',
@@ -81,9 +85,19 @@ const primaryCtaCva = cva(
   {
     variants: {
       color: {
-        canvas:  'bg-accent text-fg-on-accent hover:bg-accent-hover focus-visible:outline-accent',
-        surface: 'bg-accent text-fg-on-accent hover:bg-accent-hover focus-visible:outline-accent',
-        brand:   'bg-brand-hover text-fg-on-brand focus-visible:outline-fg-on-brand',
+        canvas:    'bg-accent text-fg-on-accent hover:bg-accent-hover focus-visible:outline-accent',
+        surface:   'bg-accent text-fg-on-accent hover:bg-accent-hover focus-visible:outline-accent',
+        brand:     'bg-brand-hover text-fg-on-brand focus-visible:outline-fg-on-brand',
+        // Deeper section ground → button pops back to the standard (lighter)
+        // brand fill, settling into brand-hover on hover — an inversion of the
+        // `brand` variant above, so the button always reads a shade apart from
+        // whatever brand-family surface it sits on.
+        brandDeep: 'bg-brand text-fg-on-brand hover:bg-brand-hover focus-visible:outline-fg-on-brand',
+        // Accent bg is a constant light, high-chroma green in both modes, so its
+        // button uses the theme-invariant dark/light pair (fg-on-accent / accent)
+        // rather than the generic fg tokens, which would otherwise track the
+        // page's ambient theme and could collide with the fixed accent ground.
+        accent:    'bg-fg-on-accent text-accent hover:bg-fg-on-accent/85 focus-visible:outline-fg-on-accent',
       },
     },
     defaultVariants: { color: 'canvas' },
@@ -100,9 +114,11 @@ const secondaryCtaCva = cva(
   {
     variants: {
       color: {
-        canvas:  'border-fg/25 text-fg hover:border-fg/55 hover:bg-fg/5 focus-visible:outline-fg',
-        surface: 'border-fg/25 text-fg hover:border-fg/55 hover:bg-fg/5 focus-visible:outline-fg',
-        brand:   'border-fg-on-brand/35 text-fg-on-brand hover:border-fg-on-brand/65 hover:bg-fg-on-brand/5 focus-visible:outline-fg-on-brand',
+        canvas:    'border-fg/25 text-fg hover:border-fg/55 hover:bg-fg/5 focus-visible:outline-fg',
+        surface:   'border-fg/25 text-fg hover:border-fg/55 hover:bg-fg/5 focus-visible:outline-fg',
+        brand:     'border-fg-on-brand/35 text-fg-on-brand hover:border-fg-on-brand/65 hover:bg-fg-on-brand/5 focus-visible:outline-fg-on-brand',
+        brandDeep: 'border-fg-on-brand/35 text-fg-on-brand hover:border-fg-on-brand/65 hover:bg-fg-on-brand/5 focus-visible:outline-fg-on-brand',
+        accent:    'border-fg-on-accent/35 text-fg-on-accent hover:border-fg-on-accent/65 hover:bg-fg-on-accent/5 focus-visible:outline-fg-on-accent',
       },
     },
     defaultVariants: { color: 'canvas' },
@@ -111,9 +127,10 @@ const secondaryCtaCva = cva(
 
 // ─── Scrim / background class helper ────────────────────────────────────────
 //
-// No media (scrim):  this layer IS the banner background, so it uses the FULL
-//                    solid color — a partial alpha would wash the brand out
-//                    (the brand color must read as the brand color, not a tint).
+// No media (scrim/none): this layer IS the banner background, so it uses the
+//                    FULL solid color — a partial alpha would wash the brand
+//                    out (the brand color must read as the brand color, not
+//                    a tint).
 // Media (scrim):     a colored overlay so the image/video reads through, tinted
 //                    to the color; opacity scales with imageBlend (overlay =
 //                    lighter, multiply = heavier press). Same treatment for
@@ -121,6 +138,8 @@ const secondaryCtaCva = cva(
 //                    behind the text," not on the media type.
 // Glass:             intentionally translucent frosted panel (its identity);
 //                    left as-is whether or not there's media behind it.
+// Media + none:      no overlay at all — the image/video renders as-is and
+//                    text/buttons sit directly on top of it.
 
 function getScrimClass(
   color:       string,
@@ -128,41 +147,54 @@ function getScrimClass(
   treatment:   string,
   hasMedia:    boolean,
 ): string {
+  if (treatment === 'none' && hasMedia) {
+    return ''
+  }
   if (treatment === 'glass') {
     if (!hasMedia) {
       // Rich gradient backdrops — give backdrop-filter tonal variance to frost over.
       // A flat solid color makes backdrop-filter invisible; these give it something.
       const map: Record<string, string> = {
-        canvas:  'banner-bg-canvas-glass',
-        surface: 'banner-bg-surface-glass',
-        brand:   'banner-bg-brand-glass',
+        canvas:    'banner-bg-canvas-glass',
+        surface:   'banner-bg-surface-glass',
+        brand:     'banner-bg-brand-glass',
+        brandDeep: 'banner-bg-brandDeep-glass',
+        accent:    'banner-bg-accent-glass',
       }
       return map[color] ?? 'banner-bg-canvas-glass'
     }
     // With media: very light tint so the image/video bleeds through strongly.
     // The glass panel + heavy blur handle legibility; the overlay only adds subtle color.
     const map: Record<string, string> = {
-      canvas:  'bg-canvas/15',
-      surface: 'bg-surface/18',
-      brand:   'bg-brand/30',
+      canvas:    'bg-canvas/15',
+      surface:   'bg-surface/18',
+      brand:     'bg-brand/30',
+      brandDeep: 'bg-brand-hover/30',
+      accent:    'bg-accent/30',
     }
     return map[color] ?? 'bg-canvas/15'
   }
-  // Solid color background when there is no image/video to show through.
+  // Solid color background when there is no image/video to show through
+  // (covers both `scrim` and `none` — with nothing behind it to preserve
+  // "as-is", `none` renders the same flat fill as `scrim`).
   if (!hasMedia) {
     const solid: Record<string, string> = {
-      canvas:  'bg-canvas',
-      surface: 'bg-surface',
-      brand:   'bg-brand',
+      canvas:    'bg-canvas',
+      surface:   'bg-surface',
+      brand:     'bg-brand',
+      brandDeep: 'bg-brand-hover',
+      accent:    'bg-accent',
     }
     return solid[color] ?? 'bg-canvas'
   }
-  // Colored overlay over an image or video.
+  // Colored overlay over an image or video (treatment === 'scrim').
   const isMultiply = imageBlend === 'multiply'
   const map: Record<string, [string, string]> = {
-    canvas:  ['bg-canvas/80',  'bg-canvas/90'],
-    surface: ['bg-surface/80', 'bg-surface/88'],
-    brand:   ['bg-brand/70',   'bg-brand/80'],
+    canvas:    ['bg-canvas/80',      'bg-canvas/90'],
+    surface:   ['bg-surface/80',     'bg-surface/88'],
+    brand:     ['bg-brand/70',       'bg-brand/80'],
+    brandDeep: ['bg-brand-hover/70', 'bg-brand-hover/80'],
+    accent:    ['bg-accent/70',      'bg-accent/80'],
   }
   const [ov, mu] = map[color as keyof typeof map] ?? map.canvas
   return isMultiply ? mu : ov
@@ -203,14 +235,31 @@ export default function BannerBlock({
     imageBlend = 'overlay',
   } = styleOptions
 
-  const isGlass    = treatment === 'glass'
-  const isBrand    = color === 'brand'
-  const isCentered = alignment === 'center'
-  const hasImage   = Boolean(bgImageSrc)
-  const hasVideo   = Boolean(bgVideoSrc)
-  const hasMedia   = hasImage || hasVideo
-  const scrimClass = getScrimClass(color, imageBlend, treatment, hasMedia)
-  const Heading    = headingLevel
+  const isGlass       = treatment === 'glass'
+  const isNone        = treatment === 'none'
+  const isBrand       = color === 'brand'
+  const isBrandFamily = color === 'brand' || color === 'brandDeep'
+  const isAccent      = color === 'accent'
+  const isCentered    = alignment === 'center'
+  const hasImage      = Boolean(bgImageSrc)
+  const hasVideo      = Boolean(bgVideoSrc)
+  const hasMedia      = hasImage || hasVideo
+  const scrimClass    = getScrimClass(color, imageBlend, treatment, hasMedia)
+  const Heading       = headingLevel
+
+  // canvas/surface follow the page's own theme; brand-family grounds are always
+  // dark and accent is always light (both constant across modes), so those two
+  // families force the descendant fg/fg-on-* tokens to resolve consistently
+  // regardless of the ambient theme. Media (image/video) is treated as a dark
+  // ground too, same as before — `none` inherits that same assumption, since
+  // the editor is choosing a photo that's expected to read with light text on it.
+  const forcedTheme = hasMedia
+    ? 'dark'
+    : isBrandFamily
+      ? 'dark'
+      : isAccent
+        ? 'light'
+        : undefined
 
   // ── Content elements (shared between scrim and glass layouts) ──────────────
   // When an image or video sits behind the label, accent-as-text is hard to
@@ -225,12 +274,14 @@ export default function BannerBlock({
           {eyebrow}
         </span>
       </p>
-    ) : (isCentered && !isBrand) ? (
+    ) : (isCentered && (color === 'canvas' || color === 'surface')) ? (
       // Centered canvas/surface banner: plain accent text in dark mode (good
       // contrast on the dark canvas), but in LIGHT mode a bright accent washes
       // out as text on the light canvas — so .banner-eyebrow-pill promotes it to
-      // a filled accent pill with fg-on-accent text (rule in globals.css). The
-      // nested span lets the pill hug the text while the <p> stays centered.
+      // a filled accent pill with fg-on-accent text (rule in globals.css). Brand
+      // family and accent grounds skip this — they already carry their own
+      // guaranteed-contrast text color via eyebrowCva, independent of theme.
+      // The nested span lets the pill hug the text while the <p> stays centered.
       <p className={cn('banner-eyebrow', eyebrowCva({ color }))} {...pa('eyebrow')}>
         <span className="banner-eyebrow-pill inline-flex items-center rounded-ot-control text-label uppercase tracking-label font-semibold">
           {eyebrow}
@@ -249,11 +300,13 @@ export default function BannerBlock({
     </Heading>
   )
 
+  const richTextColor = isBrandFamily ? 'brand' : isAccent ? 'accent' : isGlass ? 'glass' : color
+
   const bodyEl = body ? (
     <div
       className={cn('banner-body', bodyCva())}
       data-rich-text=""
-      data-color={isBrand ? 'brand' : isGlass ? 'glass' : color}
+      data-color={richTextColor}
       {...pa('body')}
     >
       <RichText content={body} />
@@ -284,7 +337,7 @@ export default function BannerBlock({
   return (
     <section
       className={sectionCva({ size })}
-      data-theme={isBrand || hasMedia ? 'dark' : undefined}
+      data-theme={forcedTheme}
     >
 
       {/* ── Background layer (z-0, absolute inset) ─────────────────────── */}
@@ -318,14 +371,18 @@ export default function BannerBlock({
           <div className="absolute inset-0 bg-canvas/35" />
         )}
 
-        {/* Scrim: color identity layer (controls how brand/canvas/surface reads) */}
-        <div className={cn('absolute inset-0', scrimClass)} />
+        {/* Scrim: color identity layer (controls how brand/canvas/surface reads).
+            Treatment "none" over media renders no layer at all — the image/video
+            shows as-is with nothing between it and the content on top. */}
+        {scrimClass && <div className={cn('absolute inset-0', scrimClass)} />}
 
-        {/* Vignette: subtle radial corner darkening; only with image/video */}
-        {hasMedia && <div className="banner-vignette absolute inset-0" />}
+        {/* Vignette: subtle radial corner darkening; only with image/video, and
+            skipped under "none" — it's an overlay effect too. */}
+        {hasMedia && !isNone && <div className="banner-vignette absolute inset-0" />}
 
-        {/* Brand bloom: radial warm halo centered behind content */}
-        {isBrand && <div className="banner-brand-bloom absolute inset-0" />}
+        {/* Brand bloom: radial warm halo centered behind content; skipped under
+            "none" for the same reason. */}
+        {isBrandFamily && !isNone && <div className="banner-brand-bloom absolute inset-0" />}
       </div>
 
       {/* ── Content layer (z-10) ────────────────────────────────────────── */}
@@ -344,8 +401,10 @@ export default function BannerBlock({
               isCentered
                 ? `items-center text-center ${isDisplay ? 'max-w-250' : 'max-w-160'} w-full`
                 : `items-start text-left  ${isDisplay ? 'max-w-225' : 'max-w-140'} w-full`,
-              isBrand             ? 'banner-glass-brand'
-              : color === 'surface' ? 'banner-glass-surface'
+              isBrand               ? 'banner-glass-brand'
+              : color === 'brandDeep' ? 'banner-glass-brandDeep'
+              : color === 'accent'    ? 'banner-glass-accent'
+              : color === 'surface'   ? 'banner-glass-surface'
               : 'banner-glass',
             )}
             // Motion under glass reads busier than a static photo at the same
