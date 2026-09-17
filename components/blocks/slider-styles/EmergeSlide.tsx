@@ -262,8 +262,13 @@ export default function EmergeSlide({ slides, styleOptions, engine }: SlideStyle
   // An editorial pull-quote treatment — larger, thin-weight — rather than
   // plain small label text, now that the corner-anchored panel has room for
   // it to be a deliberate typographic moment instead of a caption.
+  // line-clamp-1 bounds it to a fixed height regardless of copy length or
+  // column width — without it, a long quote wrapping to 2+ lines in the
+  // narrower column Compact height leaves available can grow tall enough to
+  // run into the headline zone pinned below it (both are independently
+  // absolute-positioned, so neither naturally yields room to the other).
   const body = contentSlide.body ? (
-    <div data-rich-text="" data-color={forcedTheme === 'dark' ? 'brand' : undefined} className={cn('text-title font-light leading-title tracking-title text-pretty', textRoleClass('body', contentSlide.backgroundColor, contentHasMedia), !bodyPaneled && shadowClass)}>
+    <div data-rich-text="" data-color={forcedTheme === 'dark' ? 'brand' : undefined} className={cn('text-title font-light leading-title tracking-title text-pretty line-clamp-1', textRoleClass('body', contentSlide.backgroundColor, contentHasMedia), !bodyPaneled && shadowClass)}>
       {typeof contentSlide.body === 'string' ? <p>{contentSlide.body}</p> : <RichText content={contentSlide.body} />}
     </div>
   ) : null
@@ -307,7 +312,13 @@ export default function EmergeSlide({ slides, styleOptions, engine }: SlideStyle
           brand-edged only on its two open sides, to match). Always paneled —
           this text has no other reliable way to stay legible across every
           Background Color / Overlay combination, media or not. */}
-      <div className="absolute z-10 top-0 left-0 max-w-136 pointer-events-none">
+      {/* Capped to 74% of the viewport (not just a flat rem value) because the
+          reveal panel below rests at a fixed 80%-from-left position at every
+          viewport size — on a narrow phone the rem cap alone doesn't kick in
+          until the panel is already sitting on top of the text. min() keeps
+          the original 34rem ceiling at desktop widths, where it was already
+          clear of the panel, and only tightens things below that. */}
+      <div className="absolute z-10 top-0 left-0 max-w-[min(34rem,74%)] pointer-events-none">
         <AnimatePresence mode="wait" initial={false}>
           {contentShown && body && (
             <motion.div key={contentIndex} {...zoneTheme} variants={variants} initial="enter" animate="center" exit="exit" className="pointer-events-auto">
@@ -323,7 +334,10 @@ export default function EmergeSlide({ slides, styleOptions, engine }: SlideStyle
           just above it. Bottom offset is padded a bit extra so the CTA row
           never collides with the mandatory autoplay pause control, which
           also lives in this corner (SliderBlock.client.tsx). */}
-      <div className="absolute z-10 left-lg lg:left-xl bottom-18 lg:bottom-20 max-w-152 flex flex-col gap-sm">
+      {/* Same min() reasoning as the body zone above — this zone also starts
+          at a left offset (left-lg/left-xl), so its budget is a bit tighter
+          than the body zone's to leave the same clearance from the panel. */}
+      <div className="absolute z-10 left-lg lg:left-xl bottom-18 lg:bottom-20 max-w-[min(38rem,66%)] flex flex-col gap-sm">
         {showDots && slideCount > 1 && (
           <motion.div
             {...zoneTheme}

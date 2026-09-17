@@ -55,7 +55,7 @@ const BASE_SLIDES = [
 export default function SliderPlayground() {
   return (
     <BlockPlayground
-      defaults={{ style: 'cinematic', height: 'standard', autoPlay: 'off', loop: 'loop', navigation: 'both', align: 'center', overlay: 'evenTint', color: 'brand' }}
+      defaults={{ style: 'cinematic', height: 'standard', autoPlay: 'off', loop: 'loop', navigation: 'both', align: 'center', overlay: 'leftFade', color: 'canvas' }}
       controls={[
         {
           type: 'buttons',

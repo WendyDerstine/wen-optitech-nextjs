@@ -209,14 +209,23 @@ export default function CinematicSlide({ slides, styleOptions, engine }: SlideSt
         </AnimatePresence>
       </div>
 
-      {/* Arrows — pinned to the far edges, vertically centered */}
+      {/* Arrows — pinned to the far edges, vertically centered. Cinematic's
+          content is also vertically centered and, unlike the other three
+          styles (which keep their nav clear by anchoring to the bottom),
+          isn't capped away from the edges below `lg`, so a centered arrow
+          sits right on top of the headline/body at phone widths. Embla's
+          `watchDrag` already gives touch/mouse drag at every width, and the
+          dot row below is bottom-anchored and never collides — so below
+          `lg` this hides the arrows and leans on swipe + dots instead of
+          reserving gutter space that would fight the frosted-panel/left/right
+          placements for room. */}
       {showArrows && slideCount > 1 && (
         <>
           <button
             onClick={prev}
             disabled={!canPrev}
             aria-label="Previous slide"
-            className="absolute z-20 left-md top-1/2 -translate-y-1/2 flex items-center justify-center w-11 h-11 rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-sm hover:bg-black/35 disabled:opacity-25 transition-colors"
+            className="hidden lg:flex absolute z-20 left-md top-1/2 -translate-y-1/2 items-center justify-center w-11 h-11 rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-sm hover:bg-black/35 disabled:opacity-25 transition-colors"
           >
             <ChevronLeft className="w-5 h-5" strokeWidth={1.75} aria-hidden />
           </button>
@@ -224,7 +233,7 @@ export default function CinematicSlide({ slides, styleOptions, engine }: SlideSt
             onClick={next}
             disabled={!canNext}
             aria-label="Next slide"
-            className="absolute z-20 right-md top-1/2 -translate-y-1/2 flex items-center justify-center w-11 h-11 rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-sm hover:bg-black/35 disabled:opacity-25 transition-colors"
+            className="hidden lg:flex absolute z-20 right-md top-1/2 -translate-y-1/2 items-center justify-center w-11 h-11 rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-sm hover:bg-black/35 disabled:opacity-25 transition-colors"
           >
             <ChevronRight className="w-5 h-5" strokeWidth={1.75} aria-hidden />
           </button>

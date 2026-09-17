@@ -276,12 +276,17 @@ export default function StoryRailSlide({ slides, styleOptions, engine }: SlideSt
 
       {/* A quieter "back" affordance once the visitor has moved past the
           first card (requirements §5.3 flags this as an open implementation
-          call) — swipe/keyboard Left already work regardless. */}
+          call) — swipe/keyboard Left already work regardless. Hidden below
+          `lg`: it's vertically centered over the card, and at Compact height
+          (or any short card) that lands right on top of the bottom-anchored
+          text cluster — since it's already just a "quieter" extra and Embla's
+          drag/swipe covers going back at every width, this leans on that
+          instead of fighting the cluster for room on phones. */}
       {showBack && (
         <button
           onClick={prev}
           aria-label="Previous slide"
-          className="absolute z-30 left-sm top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-full border border-white/20 bg-black/15 text-white opacity-70 backdrop-blur-sm hover:opacity-100 hover:bg-black/30 transition-all"
+          className="hidden lg:flex absolute z-30 left-sm top-1/2 -translate-y-1/2 items-center justify-center w-9 h-9 rounded-full border border-white/20 bg-black/15 text-white opacity-70 backdrop-blur-sm hover:opacity-100 hover:bg-black/30 transition-all"
         >
           <ChevronLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden />
         </button>
