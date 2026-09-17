@@ -3,7 +3,8 @@
 import { BlockPlayground } from '../playground'
 import OT_BannerBlock from '@/cms/components/OT_BannerBlock'
 
-const BANNER_IMG = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80&fit=crop'
+const BANNER_IMG   = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80&fit=crop'
+const BANNER_VIDEO = '/video/background-sample.mp4'
 
 const DEMO_CONTENT = {
   heading:           'Confidence is a competitive advantage.',
@@ -18,7 +19,7 @@ const DEMO_CONTENT = {
 export default function BannerPlayground() {
   return (
     <BlockPlayground
-      defaults={{ treatment: 'scrim', color: 'canvas', alignment: 'center', size: 'large', image: 'yes', textColor: 'auto' }}
+      defaults={{ treatment: 'scrim', color: 'canvas', alignment: 'center', size: 'large', media: 'image' }}
       controls={[
         {
           type: 'buttons',
@@ -27,7 +28,7 @@ export default function BannerPlayground() {
           options: [
             { label: 'Scrim', value: 'scrim' },
             { label: 'Glass', value: 'glass' },
-            { label: 'Flat',  value: 'flat'  },
+            { label: 'None',  value: 'none'  },
           ],
         },
         {
@@ -35,14 +36,11 @@ export default function BannerPlayground() {
           key: 'color',
           label: 'Color',
           options: [
-            { label: 'Canvas',   value: 'canvas'      },
-            { label: 'Surface',  value: 'surface'     },
-            { label: 'Brand',    value: 'brand'       },
-            { label: 'Deep',     value: 'brand_hover' },
-            { label: 'Accent',   value: 'accent'      },
-            { label: 'White',    value: 'fg_on_brand' },
-            { label: 'Fg',       value: 'fg'          },
-            { label: 'Muted',    value: 'fg_muted'    },
+            { label: 'Canvas',     value: 'canvas'    },
+            { label: 'Surface',    value: 'surface'   },
+            { label: 'Brand',      value: 'brand'     },
+            { label: 'Brand deep', value: 'brandDeep' },
+            { label: 'Accent',     value: 'accent'    },
           ],
         },
         {
@@ -65,36 +63,31 @@ export default function BannerPlayground() {
         },
         {
           type: 'buttons',
-          key: 'image',
-          label: 'Image',
+          key: 'media',
+          label: 'Media',
           options: [
-            { label: 'Yes', value: 'yes' },
-            { label: 'No',  value: 'no'  },
-          ],
-        },
-        {
-          type: 'buttons',
-          key: 'textColor',
-          label: 'Text',
-          options: [
-            { label: 'Auto',    value: 'auto'        },
-            { label: 'White',   value: 'fg_on_brand' },
-            { label: 'Default', value: 'fg'          },
-            { label: 'Muted',   value: 'fg_muted'    },
-            { label: 'Brand',   value: 'brand'       },
-            { label: 'Accent',  value: 'accent'      },
-            { label: 'Surface', value: 'surface'     },
-            { label: 'Canvas',  value: 'canvas'      },
+            { label: 'Image',         value: 'image'         },
+            { label: 'Video',         value: 'video'         },
+            { label: 'Video + Poster', value: 'video-poster' },
+            { label: 'None',          value: 'none'          },
           ],
         },
       ]}
     >
-      {s => (
-        <OT_BannerBlock
-          content={s.image === 'yes' ? { ...DEMO_CONTENT, backgroundImage: BANNER_IMG } as any : DEMO_CONTENT as any}
-          displaySettings={{ treatment: s.treatment, color: s.color, alignment: s.alignment, size: s.size, imageBlend: 'overlay', textColor: s.textColor }}
-        />
-      )}
+      {s => {
+        const mediaContent =
+          s.media === 'image'         ? { backgroundImage: BANNER_IMG } :
+          s.media === 'video'         ? { backgroundVideo: BANNER_VIDEO } :
+          s.media === 'video-poster'  ? { backgroundVideo: BANNER_VIDEO, backgroundImage: BANNER_IMG } :
+          {}
+
+        return (
+          <OT_BannerBlock
+            content={{ ...DEMO_CONTENT, ...mediaContent } as any}
+            displaySettings={{ treatment: s.treatment, color: s.color, alignment: s.alignment, size: s.size, imageBlend: 'overlay' }}
+          />
+        )
+      }}
     </BlockPlayground>
   )
 }
