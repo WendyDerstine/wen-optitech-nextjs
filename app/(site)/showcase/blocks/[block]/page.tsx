@@ -60,6 +60,7 @@ import CalloutPlayground      from '../callout-playground'
 import ButtonPlayground       from '../button-playground'
 import TrustRailPlayground    from '../trust-rail-playground'
 import TokenManagerPlayground from '../token-manager-playground'
+import SliderPlayground       from '../slider-playground'
 
 // ─── Static params ──────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ const BLOCK_SLUGS = [
   'comparison-table',
   'disclosure',
   'token-manager',
+  'slider',
   'forms',
 ] as const
 
@@ -108,6 +110,7 @@ const BLOCK_META: Record<BlockSlug, { label: string; cmsKey: string; description
   'comparison-table': { label: 'ComparisonTableBlock', cmsKey: 'OT_ComparisonTableBlock', description: 'Side-by-side comparison of plans, tiers, or account types. Grouped rows divide the table into named sections. Cells support a Lucide icon, short text, or both — an empty cell renders a dash. One column can be marked as featured to receive the brand-color treatment and a badge. On mobile a column-selector tab bar replaces the full grid, with swipe gesture support.' },
   'disclosure':       { label: 'DisclosureBlock',      cmsKey: 'OT_DisclosureBlock',      description: 'Legal and regulatory disclosures, rate notices, and footnotes. Items are auto-numbered (¹ ² ³ or a b c) — single-item blocks suppress the marker. Two styles: Fine Print (ultra-subtle footnote treatment) and Section (slightly elevated zone). Heading and marker style are content-type properties; no display template settings to configure.' },
   'token-manager':    { label: 'TokenManager',          cmsKey: 'OT_TokenManager',          description: 'Global text-token system. Authors define key–value pairs (e.g. product-name → Advantage Checking); any CMS field that contains {{product-name}} receives the value at render time — in the CMS preview and on published pages. Token keys are language-neutral; values can be translated per locale. Singleton shared block, like ThemeManager.' },
+  'slider':           { label: 'SliderBlock',           cmsKey: 'OT_SliderBlock',           description: 'Section-level slideshow with 2–8 slides. A Presentation Style (Cinematic, Editorial Split, Story Rail, Emerge) sets the composition and slide-to-slide transition — all four are fully implemented, though not every setting applies to every style, by design rather than by omission: Content Placement and Content Vertical Alignment are honored by Cinematic and Editorial Split but ignored by Story Rail and Emerge, whose content position is fixed; Editorial Split’s Overlay tints only its media panel, never the text panel; and Story Rail collapses Navigation’s Arrows/Dots/Both into a single gutter-control outcome, since it has no separate dot row. Full keyboard/ARIA carousel semantics, a mandatory pause control whenever Auto-Play is on, and a reduced-motion collapse for every transition.' },
   'forms':            { label: 'OptiFormsContainerData', cmsKey: 'OptiFormsContainerData',  description: "Built-in Optimizely Forms. Authored entirely in the CMS's Forms editor — text/number/range/choice/selection/textarea/url fields, a submit action, and optional show/hide dependency rules — then dropped onto a page as a section. This demo renders a real form authored in the connected CMS instance, not static mock data." },
 }
 
@@ -135,7 +138,7 @@ function BlockHeader({ slug }: { slug: BlockSlug }) {
   return (
     <div className="px-md pt-xl pb-lg lg:px-lg">
       <SectionLabel index={`Blocks · ${meta.cmsKey}`} title={meta.label} />
-      <p className="text-body leading-body text-fg-muted max-w-[65ch]">{meta.description}</p>
+      <p className="text-body leading-body text-fg-muted max-w-[100ch]">{meta.description}</p>
     </div>
   )
 }
@@ -2926,6 +2929,7 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'comparison-table':        return <ComparisonTableShowcase />
     case 'disclosure':              return <><BlockHeader slug="disclosure" /><DisclosurePlayground /></>
     case 'token-manager':           return <><BlockHeader slug="token-manager" /><TokenManagerPlayground /></>
+    case 'slider':                  return <><BlockHeader slug="slider" /><SliderPlayground /></>
     case 'forms':                   return <FormsShowcase />
     default:                 return notFound()
   }

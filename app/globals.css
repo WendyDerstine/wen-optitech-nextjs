@@ -3598,6 +3598,83 @@ body {
   pointer-events: none;
 }
 
+/* ── Slider overlays (OT_SliderBlock) ──────────────────────────────────────────
+ * Per-slide tints over a background image/video, shared by every Presentation
+ * Style. `--slider-tint` is set inline per slide from the slide's own
+ * Background Color token (defaults to canvas), so one class covers all five
+ * colors instead of a color × treatment matrix.
+ */
+.slider-overlay-evenTint {
+  background: oklch(from var(--slider-tint, var(--ot-canvas)) l c h / 0.45);
+  pointer-events: none;
+}
+.slider-overlay-leftFade {
+  background: linear-gradient(
+    to right,
+    oklch(from var(--slider-tint, var(--ot-canvas)) l c h / 0.7) 0%,
+    oklch(from var(--slider-tint, var(--ot-canvas)) l c h / 0.2) 45%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+.slider-overlay-rightFade {
+  background: linear-gradient(
+    to left,
+    oklch(from var(--slider-tint, var(--ot-canvas)) l c h / 0.7) 0%,
+    oklch(from var(--slider-tint, var(--ot-canvas)) l c h / 0.2) 45%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+.slider-overlay-bottomFade {
+  background: linear-gradient(
+    to top,
+    oklch(from var(--slider-tint, var(--ot-canvas)) l c h / 0.75) 0%,
+    oklch(from var(--slider-tint, var(--ot-canvas)) l c h / 0.25) 40%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+.slider-overlay-brandWash {
+  background: linear-gradient(
+    135deg,
+    oklch(from var(--ot-brand) l c h / 0.6) 0%,
+    oklch(from var(--ot-brand) l c h / 0.18) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Editorial Split's media panel when a slide has no Background Image/Video
+   (requirements §5.2): a deeper shade of the slide's own Background Color, so
+   the panel still reads as intentional rather than a blank gap. `--slider-tint`
+   is set inline the same way `.slider-overlay-*` reads it above. */
+.slider-media-fallback {
+  background: oklch(from var(--slider-tint, var(--ot-canvas)) calc(l * 0.7) c h);
+}
+
+/* Legibility safety net for slide text over a photo/video background: a soft
+   dark halo plus a tighter contact shadow, so text stays readable even when
+   the editor's chosen Overlay is "None" or doesn't fully cover the text's
+   corner of the frame. Uses relative-color syntax reading from a token
+   (zeroing l/c/h) rather than a literal black, per the token-derived-color rule. */
+.slider-text-shadow {
+  text-shadow:
+    0 2px 20px oklch(from var(--ot-canvas) 0 0 0 / 0.55),
+    0 1px 4px oklch(from var(--ot-canvas) 0 0 0 / 0.65);
+}
+
+/* Cinematic pagination dot, in Auto-Play-on mode: fills left-to-right over the
+   slide's dwell time. Reuses the tab-progress width keyframe (generic 0%→100%). */
+.slider-dot-progress {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: tab-progress var(--slider-dot-dur, 5s) linear forwards;
+  animation-play-state: var(--slider-dot-play, running);
+  pointer-events: none;
+}
+
 /* ── No-image glass backdrops ─────────────────────────────────────────────────
  *
  * backdrop-filter is invisible against a flat color. These gradient backdrops
