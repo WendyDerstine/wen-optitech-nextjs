@@ -198,18 +198,10 @@ async function PreviewPage({ searchParams }: Props) {
 
   if (lastErr || !content) {
     const msg = lastErr instanceof Error ? lastErr.message : 'Unknown error'
-    // GraphContentResponseError carries the full per-field GraphQL error list;
-    // the message above is just a "N errors, check errors object" summary.
-    const detailErrors = (lastErr as { errors?: Array<{ message: string }> } | undefined)?.errors
     return (
       <div style={{ padding: '2rem', fontFamily: 'monospace' }}>
         <p><strong>Preview unavailable</strong></p>
         <p>{msg}</p>
-        {detailErrors && detailErrors.length > 0 && (
-          <ul>
-            {detailErrors.map((e, i) => <li key={i}>{e.message}</li>)}
-          </ul>
-        )}
         <p>The content may not be published or the preview session may have expired. Reload the Visual Builder to get a fresh preview token.</p>
       </div>
     )
