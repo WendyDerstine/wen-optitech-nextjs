@@ -28,6 +28,26 @@ export const OT_ImageDefault = displayTemplate({
         r1_1:  { displayName: 'Square',            sortOrder: 50 },
       },
     },
+    fit: {
+      displayName: 'Image fit',
+      editor: 'select',
+      sortOrder: 15,
+      choices: {
+        cover:   { displayName: 'Fill & crop (Default)',    sortOrder: 10 },
+        contain: { displayName: 'Fit whole image, no crop', sortOrder: 20 },
+      },
+    },
+    mediaSize: {
+      displayName: 'Media size',
+      editor: 'select',
+      sortOrder: 17,
+      choices: {
+        fill:   { displayName: 'Fill column (Default)', sortOrder: 10 },
+        small:  { displayName: 'Small — icon mark',      sortOrder: 20 },
+        medium: { displayName: 'Medium — logo lockup',   sortOrder: 30 },
+        large:  { displayName: 'Large — compact photo',  sortOrder: 40 },
+      },
+    },
     overlay: {
       displayName: 'Brand overlay',
       editor: 'select',
@@ -45,15 +65,6 @@ export const OT_ImageDefault = displayTemplate({
         none:   { displayName: 'None (Default)',          sortOrder: 10 },
         offset: { displayName: 'Offset — bold editorial', sortOrder: 20 },
         glow:   { displayName: 'Glow — atmospheric',      sortOrder: 30 },
-      },
-    },
-    animate: {
-      displayName: 'Scroll reveal',
-      editor: 'select',
-      sortOrder: 40,
-      choices: {
-        false: { displayName: 'Off (Default)', sortOrder: 10 },
-        true:  { displayName: 'Wipe reveal',   sortOrder: 20 },
       },
     },
     captionPosition: {

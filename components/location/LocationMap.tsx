@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import Map, { Marker, Popup, NavigationControl, type MapRef } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { MapPin, ArrowUpRight, X } from 'lucide-react'
+import { MapPin, ArrowUpRight, ExternalLink, X } from 'lucide-react'
 import type { LocationData } from '@/lib/locations'
 import { hasCoordinates } from '@/lib/locationFormat'
 import LocationLabelBadge from './LocationLabelBadge'
@@ -13,11 +13,12 @@ type MappableLocation = LocationData & { coordinates: { lat: number; lon: number
 
 type Props = {
   /** Already filtered to mappable locations by the caller, but re-guarded here. */
-  locations:   LocationData[]
-  selectedKey: string | null
-  onSelectKey: (key: string | null) => void
-  token:       string
-  mapHeight:   number
+  locations:     LocationData[]
+  selectedKey:   string | null
+  onSelectKey:   (key: string | null) => void
+  onViewDetails: (location: LocationData) => void
+  token:         string
+  mapHeight:     number
 }
 
 const DARK_STYLE = 'mapbox://styles/mapbox/dark-v11'
@@ -42,7 +43,7 @@ function Beacon({ active }: { active: boolean }) {
   )
 }
 
-export default function LocationMap({ locations, selectedKey, onSelectKey, token, mapHeight }: Props) {
+export default function LocationMap({ locations, selectedKey, onSelectKey, onViewDetails, token, mapHeight }: Props) {
   const mapRef = useRef<MapRef | null>(null)
 
   const mappable = useMemo<MappableLocation[]>(
@@ -197,19 +198,26 @@ export default function LocationMap({ locations, selectedKey, onSelectKey, token
                   {selected.locationName || 'Location'}
                 </h3>
                 {selected.address && (
-                  <p className="flex items-start gap-1.5 text-xs leading-snug text-fg-muted">
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${selected.coordinates.lat},${selected.coordinates.lon}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-1.5 text-xs leading-snug text-fg-muted underline decoration-fg-muted/40 underline-offset-2 transition-colors hover:text-brand hover:decoration-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                  >
                     <MapPin size={12} strokeWidth={2} className="mt-0.5 flex-none text-brand" aria-hidden />
                     <span>{selected.address}</span>
-                  </p>
+                    <ExternalLink size={10} strokeWidth={2.5} className="mt-0.5 flex-none opacity-60" aria-hidden />
+                  </a>
                 )}
-                {selected.url && (
-                  <a
-                    href={selected.url}
-                    className="mt-0.5 inline-flex items-center gap-1 text-label font-semibold uppercase tracking-label text-brand transition-colors hover:text-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                {selected.details?.html && (
+                  <button
+                    type="button"
+                    onClick={() => onViewDetails(selected)}
+                    className="mt-1 inline-flex w-fit items-center gap-1 rounded-ot-control bg-brand px-sm py-1.5 text-label font-semibold uppercase tracking-label text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                   >
                     View details
                     <ArrowUpRight size={13} strokeWidth={2.5} aria-hidden />
-                  </a>
+                  </button>
                 )}
               </div>
             </article>

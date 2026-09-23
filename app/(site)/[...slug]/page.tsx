@@ -18,6 +18,7 @@ import { getTopicHubPage } from '@/lib/topicHub'
 import { getPractitioner } from '@/lib/practitioners'
 import { practitionerName, primaryArea, bioPreview } from '@/lib/practitionerFormat'
 import PractitionerHeader from '@/components/practitioner/PractitionerHeader'
+import BookingPanel from '@/components/practitioner/booking/BookingPanel'
 import { withAppContext }       from '@optimizely/cms-sdk/react/server'
 import { NextPreviewComponent } from '@optimizely/cms-sdk/react/nextjs'
 import type { PreviewParams }  from '@optimizely/cms-sdk'
@@ -504,7 +505,7 @@ async function CmsPage({ params, searchParams }: Props) {
       }
     }
 
-    // Topic Hub page — configurable AI-powered content discovery page
+    // Topic Hub page — _page type, no composition nodes
     if (exp?.__typename === 'OT_TopicHubPage') {
       const contentKey = exp._metadata?.key as string | undefined
       const hubContent = dm.isEnabled
@@ -571,10 +572,13 @@ async function CmsPage({ params, searchParams }: Props) {
         )}
         {dm.isEnabled && <NextPreviewComponent />}
         {practitioner && (
-          <PractitionerHeader
-            practitioner={practitioner}
-            profileLabel={(exp as any).profileLabel ?? undefined}
-          />
+          <>
+            <PractitionerHeader
+              practitioner={practitioner}
+              profileLabel={(exp as any).profileLabel ?? undefined}
+            />
+            {practitioner.bookingEnabled && <BookingPanel practitioner={practitioner} />}
+          </>
         )}
         <CompositionRenderer nodes={exp.composition.nodes} />
       </>

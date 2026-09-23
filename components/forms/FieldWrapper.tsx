@@ -21,7 +21,7 @@ export default function FieldWrapper({ id, label, tooltip, required, children }:
       )}
       {children}
       {tooltip && (
-        <p id={`${id}-hint`} className="text-[11px] text-fg-muted/50 leading-snug mt-0.5">{tooltip}</p>
+        <p id={`${id}-hint`} className="text-label text-fg-muted leading-snug">{tooltip}</p>
       )}
     </div>
   )

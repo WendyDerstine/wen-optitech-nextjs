@@ -1,11 +1,61 @@
-import type { ReactNode } from 'react'
-import { getPreviewUtils } from '@optimizely/cms-sdk/react/server'
+import React, { type ReactNode } from 'react'
+import { getPreviewUtils, OptimizelyGridSection } from '@optimizely/cms-sdk/react/server'
+import { groupAdjacentComponents, type CompositionNode } from './groupAdjacentComponents'
 
 type Props = {
   node: any
   index: number
   displaySettings?: Record<string, string | boolean>
   children: ReactNode
+}
+
+/**
+ * Content type names that get merged when 2+ instances sit adjacently in a
+ * column — each renders through one combined component instead of
+ * independently. Tab Items merge into one tab switcher; Stat/Feature Items
+ * merge into a wrapping 2-column grid. Extend this list (and register a
+ * `__<Type>Group` adapter) if another element type needs the same treatment.
+ */
+const GROUPABLE_TYPES = ['OT_TabItemBlock', 'OT_StatItemBlock', 'OT_FeatureItemBlock']
+
+function buildGroupNode(nodes: CompositionNode[]): CompositionNode {
+  const leader = nodes[0]
+  return {
+    __typename:         'CompositionComponentNode',
+    nodeType:            'component',
+    key:                 `group-${leader.key}`,
+    displayTemplateKey:  leader.displayTemplateKey,
+    // Raw {key,value}[] form — OptimizelyGridSection parses this itself, so
+    // the leading node's settings become "the group's" settings for free.
+    displaySettings:     leader.displaySettings,
+    component: {
+      __typename:   `__${leader.component.__typename}Group`,
+      __groupNodes: nodes,
+    },
+  }
+}
+
+/**
+ * Splits `nodes` on every groupable type and replaces each contiguous run of
+ * 2+ matching nodes with one synthetic group node. Lone matches, and every
+ * other node, pass through untouched — the SDK's normal per-node resolution
+ * still handles them (which is what gives an isolated Tab Item its own
+ * single-tab fallback chrome via its regular adapter).
+ */
+function buildRenderNodes(nodes: CompositionNode[]): { renderNodes: CompositionNode[]; changed: boolean } {
+  let renderNodes = nodes
+  let changed = false
+
+  for (const typeName of GROUPABLE_TYPES) {
+    const segments = groupAdjacentComponents(renderNodes, typeName)
+    if (!segments.some(s => s.type === 'group')) continue
+    changed = true
+    renderNodes = segments.flatMap(seg =>
+      seg.type === 'single' ? [seg.node] : [buildGroupNode(seg.nodes)],
+    )
+  }
+
+  return { renderNodes, changed }
 }
 
 const contentSpacingClasses: Record<string, string> = {
@@ -47,6 +97,24 @@ const alignClasses: Record<string, string> = {
 export default function Column({ node, displaySettings = {}, children }: Props) {
   const { pa } = getPreviewUtils(node)
 
+  // `children` arrives as the SDK's own <OptimizelyGridSection nodes={node.nodes} .../>
+  // element, already carrying whatever row/column/ComponentWrapper overrides the
+  // page passed at the top of the tree (e.g. Section.tsx's BlockWrapper). When a
+  // groupable run is found, re-render with the same passthrough props and only
+  // `nodes` replaced — anything we can't safely read falls back to the SDK's
+  // untouched rendering rather than risk dropping that wrapper.
+  let content: ReactNode = children
+  const rawNodes = (node?.nodes ?? []) as CompositionNode[]
+  const { renderNodes, changed } = buildRenderNodes(rawNodes)
+  if (changed && React.isValidElement(children) && children.type === OptimizelyGridSection) {
+    content = (
+      <OptimizelyGridSection
+        {...(children.props as Record<string, unknown>)}
+        nodes={renderNodes as any}
+      />
+    )
+  }
+
   const span    = String(displaySettings.gridSpan           ?? 'auto')
   const spacing = String(displaySettings.contentSpacing    ?? 'medium')
   const justify = String(displaySettings.justifyContent    ?? 'start')
@@ -74,7 +142,7 @@ export default function Column({ node, displaySettings = {}, children }: Props) 
       data-col-valign={justify !== 'start' ? justify : undefined}
       {...pa(node)}
     >
-      {children}
+      {content}
     </div>
   )
 }

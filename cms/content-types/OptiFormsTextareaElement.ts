@@ -12,5 +12,6 @@ export const OptiFormsTextareaElement = contentType({
     PredefinedValue:{ type: 'string', displayName: 'Predefined Value' },
     Validators:     { type: 'json',   displayName: 'Validators' },
     AutoComplete:   { type: 'string', displayName: 'Auto Complete' },
+    SubmissionFieldName: { type: 'string', displayName: 'Submission Field Name' },
   },
 })

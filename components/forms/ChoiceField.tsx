@@ -43,7 +43,7 @@ export default function ChoiceField({ id, name, label, tooltip, options, allowMu
         })}
       </div>
       {tooltip && (
-        <p id={`${id}-hint`} className="text-[11px] text-fg-muted/60 leading-snug mt-0.5">{tooltip}</p>
+        <p id={`${id}-hint`} className="text-label text-fg-muted leading-snug">{tooltip}</p>
       )}
     </fieldset>
   )

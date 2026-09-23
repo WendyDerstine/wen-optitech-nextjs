@@ -14,6 +14,9 @@ import { OT_ImageDefault }        from '@/cms/display-templates/OT_ImageDefault'
 import { OT_VideoDefault }        from '@/cms/display-templates/OT_VideoDefault'
 import { OT_StatBlockDefault }      from '@/cms/display-templates/OT_StatBlockDefault'
 import { OT_FeatureGridDefault }    from '@/cms/display-templates/OT_FeatureGridDefault'
+import { OT_StatItemDefault }       from '@/cms/display-templates/OT_StatItemDefault'
+import { OT_FeatureItemDefault }    from '@/cms/display-templates/OT_FeatureItemDefault'
+import { OT_TabItemDefault }        from '@/cms/display-templates/OT_TabItemDefault'
 import { OT_TrustRailDefault }      from '@/cms/display-templates/OT_TrustRailDefault'
 import { OT_LandingSection }          from '@/cms/display-templates/OT_LandingSection'
 import { OT_LandingRow }              from '@/cms/display-templates/OT_LandingRow'
@@ -37,6 +40,7 @@ import { OT_ComparisonTableDefault }        from '@/cms/display-templates/OT_Com
 import { OT_DisclosureBlockDefault }       from '@/cms/display-templates/OT_DisclosureBlockDefault'
 import { OT_TopicHubDefault }             from '@/cms/display-templates/OT_TopicHubDefault'
 import { OT_CarouselDefault }            from '@/cms/display-templates/OT_CarouselDefault'
+import { OT_SliderDefault }               from '@/cms/display-templates/OT_SliderDefault'
 
 // Content type definitions — required at runtime so the SDK's query builder
 // can generate the correct GraphQL fragments for each type
@@ -50,8 +54,10 @@ import { OT_ImageBlock }        from '@/cms/content-types/OT_ImageBlock'
 import { OT_VideoBlock }        from '@/cms/content-types/OT_VideoBlock'
 import { OT_StatItem }           from '@/cms/content-types/OT_StatItem'
 import { OT_StatBlock }          from '@/cms/content-types/OT_StatBlock'
+import { OT_StatItemBlock }      from '@/cms/content-types/OT_StatItemBlock'
 import { OT_FeatureItem }        from '@/cms/content-types/OT_FeatureItem'
 import { OT_FeatureGridBlock }   from '@/cms/content-types/OT_FeatureGridBlock'
+import { OT_FeatureItemBlock }   from '@/cms/content-types/OT_FeatureItemBlock'
 import { OT_LogoItem }           from '@/cms/content-types/OT_LogoItem'
 import { OT_TrustRail }          from '@/cms/content-types/OT_TrustRail'
 import { BlankExperience }  from '@/cms/content-types/BlankExperience'
@@ -74,6 +80,7 @@ import { OT_AccordionItem }    from '@/cms/content-types/OT_AccordionItem'
 import { OT_AccordionBlock }   from '@/cms/content-types/OT_AccordionBlock'
 import { OT_TabItem }          from '@/cms/content-types/OT_TabItem'
 import { OT_TabsBlock }        from '@/cms/content-types/OT_TabsBlock'
+import { OT_TabItemBlock }     from '@/cms/content-types/OT_TabItemBlock'
 import { OT_ChartBlock }       from '@/cms/content-types/OT_ChartBlock'
 import { OT_BannerBlock }           from '@/cms/content-types/OT_BannerBlock'
 import { OT_ResourceLibraryBlock }  from '@/cms/content-types/OT_ResourceLibraryBlock'
@@ -101,6 +108,8 @@ import { OT_TopicHubBucket }         from '@/cms/content-types/OT_TopicHubBucket
 import { OT_TopicHubPage }           from '@/cms/content-types/OT_TopicHubPage'
 import { OT_CarouselSlide }          from '@/cms/content-types/OT_CarouselSlide'
 import { OT_CarouselBlock }          from '@/cms/content-types/OT_CarouselBlock'
+import { OT_SlideItem }              from '@/cms/content-types/OT_SlideItem'
+import { OT_SliderBlock }            from '@/cms/content-types/OT_SliderBlock'
 
 // OptiForm content types — built-in Forms for Visual Builder element schemas
 import { OptiFormsContainerData }   from '@/cms/content-types/OptiFormsContainerData'
@@ -126,7 +135,13 @@ import OT_RichTextBlockAdapter    from '@/cms/components/OT_RichTextBlock'
 import OT_ImageBlockAdapter       from '@/cms/components/OT_ImageBlock'
 import OT_VideoBlockAdapter       from '@/cms/components/OT_VideoBlock'
 import OT_StatBlockAdapter            from '@/cms/components/OT_StatBlock'
+import OT_StatItemBlockAdapter        from '@/cms/components/OT_StatItemBlock'
+import OT_StatItemGroupAdapter        from '@/cms/components/OT_StatItemGroup'
 import OT_FeatureGridBlockAdapter     from '@/cms/components/OT_FeatureGridBlock'
+import OT_FeatureItemBlockAdapter     from '@/cms/components/OT_FeatureItemBlock'
+import OT_FeatureItemGroupAdapter     from '@/cms/components/OT_FeatureItemGroup'
+import OT_TabItemBlockAdapter         from '@/cms/components/OT_TabItemBlock'
+import OT_TabItemGroupAdapter         from '@/cms/components/OT_TabItemGroup'
 import OT_TrustRailAdapter            from '@/cms/components/OT_TrustRail'
 import OT_ThemeManagerAdapter     from '@/cms/components/OT_ThemeManager'
 import OT_AuthorAdapter           from '@/cms/components/OT_Author'
@@ -155,6 +170,7 @@ import OT_DisclosureBlockAdapter            from '@/cms/components/OT_Disclosure
 import OT_TokenManagerAdapter               from '@/cms/components/OT_TokenManager'
 import OT_TopicHubPageAdapter              from '@/cms/components/OT_TopicHubPage'
 import OT_CarouselBlockAdapter             from '@/cms/components/OT_CarouselBlock'
+import OT_SliderBlockAdapter               from '@/cms/components/OT_SliderBlock'
 
 // OptiForm component adapters
 import OptiFormsContainerDataAdapter   from '@/cms/components/OptiFormsContainerData'
@@ -188,6 +204,9 @@ initDisplayTemplateRegistry([
   OT_VideoDefault,
   OT_StatBlockDefault,
   OT_FeatureGridDefault,
+  OT_StatItemDefault,
+  OT_FeatureItemDefault,
+  OT_TabItemDefault,
   OT_TrustRailDefault,
   OT_LandingSection,
   OT_LandingRow,
@@ -211,6 +230,7 @@ initDisplayTemplateRegistry([
   OT_DisclosureBlockDefault,
   OT_TopicHubDefault,
   OT_CarouselDefault,
+  OT_SliderDefault,
 ])
 
 initContentTypeRegistry([
@@ -224,8 +244,10 @@ initContentTypeRegistry([
   OT_VideoBlock,
   OT_StatItem,
   OT_StatBlock,
+  OT_StatItemBlock,
   OT_FeatureItem,
   OT_FeatureGridBlock,
+  OT_FeatureItemBlock,
   OT_LogoItem,
   OT_TrustRail,
   BlankExperience,
@@ -248,6 +270,7 @@ initContentTypeRegistry([
   OT_AccordionBlock,
   OT_TabItem,
   OT_TabsBlock,
+  OT_TabItemBlock,
   OT_ChartBlock,
   OT_BannerBlock,
   OT_ResourceLibraryBlock,
@@ -275,6 +298,8 @@ initContentTypeRegistry([
   OT_TopicHubPage,
   OT_CarouselSlide,
   OT_CarouselBlock,
+  OT_SlideItem,
+  OT_SliderBlock,
   // OptiForm types
   OptiFormsContainerData,
   OptiFormsDependencyRule,
@@ -302,7 +327,13 @@ initReactComponentRegistry({
     OT_ImageBlock:       OT_ImageBlockAdapter,
     OT_VideoBlock:       OT_VideoBlockAdapter,
     OT_StatBlock:        OT_StatBlockAdapter,
+    OT_StatItemBlock:    OT_StatItemBlockAdapter,
+    // Synthetic — see cms/compositions/Column.tsx / OT_StatItemGroup.tsx
+    __OT_StatItemBlockGroup: OT_StatItemGroupAdapter,
     OT_FeatureGridBlock: OT_FeatureGridBlockAdapter,
+    OT_FeatureItemBlock: OT_FeatureItemBlockAdapter,
+    // Synthetic — see cms/compositions/Column.tsx / OT_FeatureItemGroup.tsx
+    __OT_FeatureItemBlockGroup: OT_FeatureItemGroupAdapter,
     OT_TrustRail:        OT_TrustRailAdapter,
     OT_ThemeManager:     OT_ThemeManagerAdapter,
     OT_Author:           OT_AuthorAdapter,
@@ -314,6 +345,11 @@ initReactComponentRegistry({
     OT_BlogFeedBlock:    OT_BlogFeedBlockAdapter,
     OT_AccordionBlock:   OT_AccordionBlockAdapter,
     OT_TabsBlock:        OT_TabsBlockAdapter,
+    OT_TabItemBlock:     OT_TabItemBlockAdapter,
+    // Synthetic type — never a real CMS content type. Built at render time by
+    // cms/compositions/Column.tsx when 2+ OT_TabItemBlock elements sit
+    // adjacently in a column; see cms/components/OT_TabItemGroup.tsx.
+    __OT_TabItemBlockGroup: OT_TabItemGroupAdapter,
     OT_ChartBlock:       OT_ChartBlockAdapter,
     OT_BannerBlock:           OT_BannerBlockAdapter,
     OT_ResourceLibraryBlock:  OT_ResourceLibraryBlockAdapter,
@@ -329,6 +365,7 @@ initReactComponentRegistry({
     OT_TokenManager:                OT_TokenManagerAdapter,
     OT_TopicHubPage:                OT_TopicHubPageAdapter,
     OT_CarouselBlock:               OT_CarouselBlockAdapter,
+    OT_SliderBlock:                 OT_SliderBlockAdapter,
     // Preview-only: lets /preview render the shared profile record (not used in compositions)
     OT_PractitionerProfile:      OT_PractitionerProfileAdapter,
     OT_LocationProfile:          OT_LocationProfileAdapter,

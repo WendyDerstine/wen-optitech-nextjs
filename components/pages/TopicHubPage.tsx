@@ -16,6 +16,8 @@ import {
 import type { SearchResult } from '@/lib/search'
 import type { TopicHubBucket, TopicHubRecommendation } from '@/lib/topicHub'
 import { eventTypeLabel } from '@/lib/eventFormat'
+import LocationPlate from '@/components/location/LocationPlate'
+import LocationLabelBadge from '@/components/location/LocationLabelBadge'
 
 const PrimaryTextDepth3D = dynamic(
   () => import('@/components/blocks/PrimaryTextDepth3D.client'),
@@ -270,43 +272,36 @@ function PractitionerCard({ result }: { result: SearchResult }) {
 }
 
 // ─── Location card ─────────────────────────────────────────────────────────────
-// Locations are informational — OT_LocationProfile has no page URL.
+// Locations are informational — OT_LocationProfile has no page URL. Mirrors the
+// image-plate + badge + stacked-details layout of the CMS's own location detail
+// preview (cms/components/OT_LocationProfile.tsx) rather than the directory
+// listing's hover-reveal card, so a location reads the same in search results as
+// it does when an editor opens the record directly.
 
 function LocationCard({ result }: { result: SearchResult }) {
   return (
-    <div className="flex items-start gap-md h-full bg-surface border border-fg/8 rounded-ot-surface p-md">
-      {/* Map thumbnail or pin icon */}
-      <div className="flex-none w-13 h-13 rounded-ot-surface overflow-hidden bg-brand/6 border border-brand/12 shrink-0 flex items-center justify-center">
-        {result.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={result.imageUrl}
-            alt={result.title}
-            loading="lazy"
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <MapPin size={20} className="text-brand/60" aria-hidden />
+    <div className="flex flex-col h-full bg-surface border border-fg/8 rounded-ot-surface overflow-hidden">
+      <div className="relative aspect-video shrink-0 bg-canvas">
+        <LocationPlate shape="fill" src={result.imageUrl} name={result.title} />
+        {result.locationBadge && (
+          <div className="absolute left-0 top-4 z-10">
+            <LocationLabelBadge label={result.locationBadge} />
+          </div>
         )}
       </div>
 
-      {/* Details */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-sm justify-between">
-          <p className="text-title leading-title font-semibold text-fg line-clamp-1">
-            {result.title}
-          </p>
-          {result.locationBadge && (
-            <span className="flex-none text-[0.6rem] font-bold uppercase tracking-[0.12em] px-sm py-0.75 bg-brand/8 text-brand rounded-ot-control border border-brand/15 leading-none whitespace-nowrap">
-              {result.locationBadge}
-            </span>
-          )}
-        </div>
+      <div className="flex flex-col flex-1 gap-xs px-md pt-md pb-lg">
+        <h3 className="text-title leading-title font-semibold text-fg text-balance line-clamp-2">
+          {result.title}
+        </h3>
         {result.address && (
-          <p className="mt-1 flex items-start gap-1.25 text-body-sm text-fg-muted/75">
-            <MapPin size={12} className="flex-none mt-0.5 text-fg-muted/40" aria-hidden />
-            {result.address}
+          <p className="flex items-start gap-1.5 text-body-sm text-fg-muted">
+            <MapPin size={13} strokeWidth={2} className="flex-none mt-0.5 text-brand" aria-hidden />
+            <span className="line-clamp-2">{result.address}</span>
           </p>
+        )}
+        {result.excerpt && (
+          <p className="text-body-sm text-fg-muted line-clamp-2 text-pretty">{result.excerpt}</p>
         )}
       </div>
     </div>

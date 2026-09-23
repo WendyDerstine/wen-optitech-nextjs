@@ -19,6 +19,7 @@ export default function OnPageEdit() {
         document
           .querySelectorAll<HTMLElement>(selector)
           .forEach(el => {
+            // Block containers manage their own on-page editing — skip their descendants.
             if (el.closest('[is-on-page-editing-block-container]')) return
             if (prop.value != null) el.innerHTML = prop.value
           })
@@ -27,9 +28,12 @@ export default function OnPageEdit() {
       router.refresh()
     }
 
-    // The CMS sends a raw postMessage with id:'contentSaved' and a previewUrl
-    // containing the new version + preview token. communicationinjector.js does
-    // NOT translate this into window.epi events — so we handle it directly.
+    // communicationinjector.js only bridges this postMessage into the
+    // `optimizely:cms:contentSaved` CustomEvent (what NextPreviewComponent
+    // listens for) when it considered the frame "editable" at epiReady time.
+    // That bridge doesn't reliably engage in the standalone block-preview
+    // iframe (app/(draft)/draft/[version]/block/[key]), so this listens to the
+    // raw postMessage directly instead of depending on it.
     function handleMessage(e: MessageEvent) {
       if (e.data?.id !== 'contentSaved') return
       const previewUrl: string | undefined =
@@ -47,18 +51,8 @@ export default function OnPageEdit() {
     }
 
     window.addEventListener('message', handleMessage)
-
-    // Fallback: newer SDK versions dispatch this CustomEvent
-    function handleNewEvent(e: Event) {
-      handleContentSaved((e as CustomEvent).detail ?? {})
-    }
-    window.addEventListener('optimizely:cms:contentSaved', handleNewEvent)
-
-    return () => {
-      window.removeEventListener('message', handleMessage)
-      window.removeEventListener('optimizely:cms:contentSaved', handleNewEvent)
-    }
-  }, [])
+    return () => window.removeEventListener('message', handleMessage)
+  }, [router])
 
   return null
 }

@@ -1,19 +1,20 @@
 # Site Accelerator
 
-**Site Accelerator** is a configurable, vertical-agnostic site framework built on the **Next.js App Router** and the **Optimizely SaaS CMS**. It is not a single brand site; it is a system for standing up credible, editorially confident marketing sites in any vertical (financial services, healthcare, retail, legal, and more) by re-theming and composing one shared component library through **ThemeManager**, **Visual Builder**, and **display templates**.
+**Site Accelerator** is a configurable, vertical-agnostic site framework built on the **Next.js App Router** and the **Optimizely SaaS CMS** — not a single brand site, but a system for standing up credible, editorially confident marketing sites in any vertical (financial services, healthcare, retail, legal, and more) by re-theming and re-composing one shared component library through **ThemeManager**, **Visual Builder**, and **display templates**.
 
-Its primary job is **pre-sales enablement**: solution engineers re-skin and re-compose it to show a prospect, in that prospect's own industry, what the SaaS CMS can do — Visual Builder composition, theme management, display templates, and headless delivery.
+Its primary job is **pre-sales enablement**: solution engineers re-skin and re-compose it to demo the SaaS CMS — Visual Builder composition, theme management, display templates, headless delivery — in a prospect's own industry.
 
 > The `OT_` content-type prefix and `--ot-` token prefix are **historical and theme-neutral** — they carry no brand meaning and are intentionally not renamed (renaming content-type keys is a breaking CMS migration).
 
 ## Stack
 
-- **Next.js 16.2.6** — App Router, TypeScript (no Pages Router)
-- **React 19.2.4**
-- **Tailwind CSS v4** — configured via `@import "tailwindcss"` in `app/globals.css`; design tokens live in `styles/tokens.css` (there is no `tailwind.config.*`)
-- **@optimizely/cms-sdk ^2.1.0** — headless content client (Optimizely Graph)
-- **@optimizely/cms-cli ^2.0.0** — syncs TypeScript content-type definitions to the CMS (`yarn cms:push` / `cms:pull`)
+- **Next.js 16.3.5** — App Router, TypeScript (no Pages Router)
+- **React 19.3.0**
+- **Tailwind CSS v4** (4.3.x) — configured via `@import "tailwindcss"` in `app/globals.css`; design tokens live in `styles/tokens.css` (there is no `tailwind.config.*`)
+- **@optimizely/cms-sdk ^2.2.0** — headless content client (Optimizely Graph)
+- **@optimizely/cms-cli ^2.2.0** — syncs TypeScript content-type definitions to the CMS (`yarn cms:push` / `cms:pull`)
 - **Recharts** — powers the ChartBlock data visualizations
+- **Embla Carousel** (`embla-carousel-react`) — carousel engine behind the SliderBlock's four presentation styles
 
 ## Getting started
 
@@ -43,7 +44,7 @@ Set the environment variables under **Optimizely CMS Setup** below first — the
 The App Router lives under `app/`, with the public marketing site grouped in `app/(site)/`.
 
 - **Design tokens** (`styles/tokens.css`) are the brand. Every color / spacing / type / motion value is a `--ot-*` custom property and components reference tokens, never raw values. Dark mode is the default; `data-theme="light"` flips the grounds.
-- **ThemeManager axes** re-skin the whole system from the CMS with no code changes: **Primary Font** (Poppins by default, swappable to Source Serif 4 / Sora / Bricolage Grotesque), **Corner Style** (Sharp / Soft / Rounded), and **Motion Intensity** (Calm / Default / Energetic). `buildThemeCSS()` in [`lib/optimizely.ts`](lib/optimizely.ts) emits the overrides from the ThemeManager content type. Fixed-purpose fonts sit alongside the themeable primary: Syne (accent moments), Geist Mono (code / data), Caveat (the QuoteBlock signature), and Tilt Neon (the PrimaryText "neon" effect).
+- **ThemeManager axes** re-skin the whole system from the CMS, no code changes: **Primary Font** (Poppins default, swappable to Source Serif 4 / Sora / Bricolage Grotesque), **Corner Style** (Sharp / Soft / Rounded), **Motion Intensity** (Calm / Default / Energetic). `buildThemeCSS()` in [`lib/optimizely.ts`](lib/optimizely.ts) emits the overrides. Fixed-purpose fonts sit alongside the themeable primary: Syne (accent moments), Geist Mono (code / data), Caveat (QuoteBlock signature), Tilt Neon (PrimaryText "neon" effect).
 - **Block library** ([`components/blocks/`](components/blocks/)) — the composable Visual Builder blocks (Hero, Card, PrimaryText, Quote, Stat, Feature Grid, Accordion, Tabs, Chart, Blog Feed, and more). Each block follows a fixed four-layer CMS pattern (content type → display template → adapter → React component) and ships a showcase demo in the same task.
 - **Showcase** (**`/showcase`**) — a live gallery of every block and layout plus a theme playground, grouped into Blocks / Pages / Layout / Theme. The fastest way to see what exists and how each variant renders under the current theme.
 - **CMS-driven pages** render through the catch-all at [`app/(site)/[...slug]/page.tsx`](app/(site)/[...slug]/page.tsx), which fetches by slug via Optimizely Graph and renders the SDK composition tree.
@@ -57,15 +58,15 @@ The App Router lives under `app/`, with the public marketing site grouped in `ap
 | [`Optimizely.md`](Optimizely.md) | CMS integration patterns, page / experience types, Graph queries |
 | [`CLAUDE.md`](CLAUDE.md) | Repo conventions and the CMS block-authoring workflow |
 
-For adding or editing CMS blocks, the **optimizely-block** skill (`.claude/skills/optimizely-block/`) encodes the exact four-layer + showcase + push workflow and the seven artifacts each block needs to be complete.
+For adding or editing CMS blocks, see the **optimizely-block** skill below — it encodes the exact workflow and the seven required artifacts.
 
 ## Claude Code skills
 
-This repo ships a project-scoped [Claude Code](https://claude.com/claude-code) skill for Optimizely CMS work, under [`.claude/skills/`](.claude/skills/). It is picked up automatically when a request matches — you don't have to name it.
+This repo ships a project-scoped [Claude Code](https://claude.com/claude-code) skill for Optimizely CMS work, under [`.claude/skills/`](.claude/skills/). It's picked up automatically when a request matches — you don't have to name it.
 
 ### `optimizely-block`
 
-Encodes this repo's exact workflow for **any** work on a CMS block or section — creating, extending, restyling, or wiring one up. It triggers on requests like *"add a Testimonial block"*, *"add a field to the Card block"*, or *"new hero variant"*, and supersedes the generic `optimizely-model` / `optimizely-model-react` plugin skills for anything touching `cms/` or `components/blocks/`. It captures the **four-layer + showcase + push** workflow and the **seven artifacts** a block needs to be complete: content type, display template, CMS adapter, UI component, three `cms/registry.ts` entries, the showcase demo, and the showcase nav item.
+Encodes this repo's exact workflow for **any** work on a CMS block or section — creating, extending, restyling, or wiring one up. Triggers on requests like *"add a Testimonial block"*, *"add a field to the Card block"*, or *"new hero variant"*, and supersedes the generic `optimizely-model` / `optimizely-model-react` plugin skills for anything touching `cms/` or `components/blocks/`.
 
 Reference files (`.claude/skills/optimizely-block/references/`):
 

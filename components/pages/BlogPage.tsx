@@ -52,13 +52,26 @@ function TopicMark({ topic, onBrand = false }: { topic: string; onBrand?: boolea
 }
 
 // ─── TopicPill — filled accent badge (editorial + atmospheric headers) ────────
-// Accent fill + fg-on-accent text. Used wherever the label sits over an image or
-// busy surface, where accent-as-text would be hard to read.
+// Accent fill + fg-on-accent text, always — fg-on-accent is the one token
+// guaranteed to contrast with accent under any theme. Never pair accent's fill
+// with a foreign token as text color (e.g. text-brand): brand and accent are
+// independently themeable with no defined relationship, so that pairing can
+// land light-on-light or dark-on-dark depending on the theme.
+//
+// `accented` (editorial masthead only) adds a brand moment through effects that
+// don't touch text contrast: a chromatic brand-bloom glow, a hairline brand-tinted
+// ring, and a small solid brand chip ahead of the label — a wax-seal beat that
+// reads as more ceremonial than the plain accent pill used elsewhere.
 
-function TopicPill({ topic, brandLabel = false }: { topic: string; brandLabel?: boolean }) {
+function TopicPill({ topic, accented = false }: { topic: string; accented?: boolean }) {
   const label = TOPIC_LABELS[topic] ?? topic
   return (
-    <span className={`inline-flex items-center px-sm py-0.75 bg-accent text-label uppercase tracking-label font-semibold ${brandLabel ? 'text-brand' : 'text-fg-on-accent'}`}>
+    <span
+      className={`inline-flex items-center gap-xs px-sm py-0.75 bg-accent text-fg-on-accent text-label uppercase tracking-label font-semibold ${
+        accented ? 'shadow-[0_4px_20px_var(--ot-bloom-brand-faint),0_0_0_1px_var(--ot-bloom-brand-border)]' : ''
+      }`}
+    >
+      {accented && <span className="block w-1.5 h-1.5 bg-brand flex-none" aria-hidden />}
       {label}
     </span>
   )
@@ -347,7 +360,7 @@ function EditorialHeader({
           <div className="flex flex-wrap items-center justify-between gap-md pb-md motion-safe:animate-fade-in">
             {topic ? (
               <div {...pa?.('topic')}>
-                <TopicPill topic={topic} brandLabel />
+                <TopicPill topic={topic} accented />
               </div>
             ) : (
               <span />

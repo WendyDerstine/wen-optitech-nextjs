@@ -1,24 +1,28 @@
 import { getPreviewUtils } from '@optimizely/cms-sdk/react/server'
 import RangeField from '@/components/forms/RangeField'
+import ConditionalField from '@/components/forms/ConditionalField'
 
 type Props = { content: any }
 
 export default function OptiFormsRangeElementAdapter({ content }: Props) {
   const { pa } = getPreviewUtils(content)
-  const id = content._metadata?.key ?? 'field'
+  const nodeKey = content.__composition?.key ?? content._metadata?.key ?? 'field'
+  const name = content.SubmissionFieldName || nodeKey
 
   return (
-    <div className="w-full" {...pa(content.__composition)}>
-      <RangeField
-        id={id}
-        name={id}
-        label={content.Label ?? undefined}
-        tooltip={content.Tooltip ?? undefined}
-        defaultValue={content.PredefinedValue ?? undefined}
-        min={content.Min ?? 0}
-        max={content.Max ?? 100}
-        step={content.Increment ?? 1}
-      />
-    </div>
+    <ConditionalField nodeKey={nodeKey}>
+      <div className="w-full" {...pa(content.__composition)}>
+        <RangeField
+          id={nodeKey}
+          name={name}
+          label={content.Label ?? undefined}
+          tooltip={content.Tooltip ?? undefined}
+          defaultValue={content.PredefinedValue ?? undefined}
+          min={content.Min ?? 0}
+          max={content.Max ?? 100}
+          step={content.Increment ?? 1}
+        />
+      </div>
+    </ConditionalField>
   )
 }

@@ -31,6 +31,7 @@ import type { ContentRecItem }         from '@/components/blocks/ContentRecommen
 import ProductRecommendationsBlock     from '@/components/blocks/ProductRecommendationsBlock'
 import type { ProductRec }             from '@/components/blocks/ProductRecommendationsBlock'
 import OT_ComparisonTableBlock         from '@/cms/components/OT_ComparisonTableBlock'
+import OptiFormsContainerDataAdapter   from '@/cms/components/OptiFormsContainerData'
 import {
   ArrowRight, Zap, ChevronRight, Play, Download,
   Sparkles, Send, Rocket, Star, Plus,
@@ -47,9 +48,12 @@ import QuotePlayground       from '../quote-playground'
 import ImagePlayground       from '../image-playground'
 import VideoPlayground       from '../video-playground'
 import StatPlayground        from '../stat-playground'
+import StatItemPlayground    from '../stat-item-playground'
 import FeatureGridPlayground from '../feature-grid-playground'
+import FeatureItemPlayground from '../feature-item-playground'
 import AccordionPlayground   from '../accordion-playground'
 import TabsPlayground        from '../tabs-playground'
+import TabItemPlayground     from '../tab-item-playground'
 import BannerPlayground      from '../banner-playground'
 import DisclosurePlayground  from '../disclosure-playground'
 import CalloutPlayground      from '../callout-playground'
@@ -57,19 +61,22 @@ import ButtonPlayground       from '../button-playground'
 import TrustRailPlayground    from '../trust-rail-playground'
 import TokenManagerPlayground from '../token-manager-playground'
 import CarouselPlayground     from '../carousel-playground'
+import SliderPlayground       from '../slider-playground'
 
 // ─── Static params ──────────────────────────────────────────────────────────
 
 const BLOCK_SLUGS = [
   'hero', 'card', 'primary-text', 'quote', 'rich-text',
-  'image', 'video', 'stat', 'feature-grid', 'trust-rail',
-  'accordion', 'tabs', 'blog-feed', 'button', 'chart', 'banner', 'resource-library',
+  'image', 'video', 'stat', 'stat-item', 'feature-grid', 'feature-item', 'trust-rail',
+  'accordion', 'tabs', 'tab-item', 'blog-feed', 'button', 'chart', 'banner', 'resource-library',
   'callout', 'divider', 'event-listing', 'practitioner-listing', 'location-listing',
   'content-recommendations', 'product-recommendations',
   'comparison-table',
   'disclosure',
   'token-manager',
   'carousel',
+  'slider',
+  'forms',
 ] as const
 
 type BlockSlug = typeof BLOCK_SLUGS[number]
@@ -83,10 +90,13 @@ const BLOCK_META: Record<BlockSlug, { label: string; cmsKey: string; description
   'image':        { label: 'ImageBlock',         cmsKey: 'OT_ImageBlock',       description: 'Flexible image block with two frame modes, teal brand overlay, inset or below caption, chromatic shadow bloom, and a scroll-triggered wipe reveal. Populate any editorial field (eyebrow, heading, body, CTA) to auto-enable a 55/45 two-column editorial layout with configurable media side.' },
   'video':        { label: 'VideoBlock',         cmsKey: 'OT_VideoBlock',       description: 'YouTube and Vimeo embeds with a branded poster state. Platform thumbnails are auto-fetched; a teal play button replaces the iframe until clicked. Populate any editorial field to auto-enable a 55/45 two-column editorial layout with configurable media side.' },
   'stat':         { label: 'StatBlock',          cmsKey: 'OT_StatBlock',        description: 'Horizontal row of metric callouts. Numbers animate on scroll with a staggered entrance and easeOutQuart count-up. Three color schemes (brand/canvas/surface), glass panel mode, 2–4 columns, optional icons with inline or above placement, and four numeral effects: none, gradient (brand-to-accent diagonal fill), glow (ambient bloom), and shimmer (one-shot highlight sweep on count-up). Effect is a content-type property; all others are display settings.' },
+  'stat-item':    { label: 'StatItemBlock',      cmsKey: 'OT_StatItemBlock',    description: 'A single metric callout as a Visual Builder element — placeable directly in a column (e.g. beside a Card), not just as a full-width section. Element-enabled only, so it never appears alongside Stat Block in the same picker. Value, label, context, icon, and numeral effect are content properties; color/glass/icon placement/animation are display settings.' },
   'feature-grid': { label: 'FeatureGridBlock',   cmsKey: 'OT_FeatureGridBlock', description: 'Grid of feature tiles with optional eyebrow, heading, and CTA. Supports grid and ruled layouts, 2–4 columns, optional icon slots, and stagger entrance animation.' },
+  'feature-item': { label: 'FeatureItemBlock',   cmsKey: 'OT_FeatureItemBlock', description: 'A single feature tile as a Visual Builder element — placeable directly in a column. Element-enabled only, so it never appears alongside Feature Grid Block in the same picker. Headline, body, CTA, and icon are content properties.' },
   'trust-rail':   { label: 'TrustRail',          cmsKey: 'OT_TrustRail',        description: 'Logo trust strip with seamless marquee, staggered fade, or static grid. Mono grayscale + color-on-hover treatment. Logos are CMS-managed content references.' },
   'accordion':    { label: 'AccordionBlock',      cmsKey: 'OT_AccordionBlock',   description: 'Expandable FAQ or content section. Three border styles, three color schemes, single or multiple open mode, and optional default-open first item.' },
   'tabs':         { label: 'TabsBlock',           cmsKey: 'OT_TabsBlock',        description: 'Tabbed content block with underline, pill, or button-group triggers. Top or side tab position. Optional image panel and auto-play.' },
+  'tab-item':     { label: 'TabItemBlock',        cmsKey: 'OT_TabItemBlock',     description: 'A single tab panel as a Visual Builder element. Two or more placed adjacently in the same column merge into one real tab switcher (see cms/compositions/Column.tsx); a lone one still renders in tabbed chrome instead of a bare panel. Element-enabled only, so it never appears alongside Tabs Block in the same picker.' },
   'blog-feed':    { label: 'BlogFeedBlock',       cmsKey: 'OT_BlogFeedBlock',    description: 'CMS-driven blog post grid. Posts are fetched at render time from the connected article root. Three color schemes, 2- or 3-column layout, and three heading sizes.' },
   'button':       { label: 'Button',              cmsKey: 'OT_ButtonBlock',      description: 'Six button variants, three sizes, optional icon slots (leading/trailing). Polymorphic — renders as <button> or <Link> based on the href prop.' },
   'chart':        { label: 'ChartBlock',          cmsKey: 'OT_ChartBlock',       description: 'CMS-driven data visualization block. Five chart types: line, area, bar, bar stacked, and radial gauge. Four color variants, five series color palettes, fully responsive via Recharts.' },
@@ -103,6 +113,8 @@ const BLOCK_META: Record<BlockSlug, { label: string; cmsKey: string; description
   'disclosure':       { label: 'DisclosureBlock',      cmsKey: 'OT_DisclosureBlock',      description: 'Legal and regulatory disclosures, rate notices, and footnotes. Items are auto-numbered (¹ ² ³ or a b c) — single-item blocks suppress the marker. Two styles: Fine Print (ultra-subtle footnote treatment) and Section (slightly elevated zone). Heading and marker style are content-type properties; no display template settings to configure.' },
   'token-manager':    { label: 'TokenManager',          cmsKey: 'OT_TokenManager',          description: 'Global text-token system. Authors define key–value pairs (e.g. product-name → Advantage Checking); any CMS field that contains {{product-name}} receives the value at render time — in the CMS preview and on published pages. Token keys are language-neutral; values can be translated per locale. Singleton shared block, like ThemeManager.' },
   'carousel':         { label: 'CarouselBlock',         cmsKey: 'OT_CarouselBlock',         description: 'Editorial slideshow with 2–8 slides. Full-bleed mode uses the image as a full-width background with a gradient overlay; split mode places the image on the left with a content panel on the right. Four transition styles (slide, cover, fade, morph), autoplay with three speeds, loop or bounce mode, peek control to reveal adjacent slides, and a dot + arrow nav bar.' },
+  'slider':           { label: 'SliderBlock',           cmsKey: 'OT_SliderBlock',           description: 'Section-level slideshow with 2–8 slides. A Presentation Style (Cinematic, Editorial Split, Story Rail, Emerge) sets the composition and slide-to-slide transition — all four are fully implemented, though not every setting applies to every style, by design rather than by omission: Content Placement and Content Vertical Alignment are honored by Cinematic, Editorial Split, and Emerge but ignored by Story Rail, whose content position is fixed; Editorial Split’s Overlay tints only its media panel, never the text panel; Story Rail collapses Navigation’s Arrows/Dots/Both into a single gutter-control outcome, since it has no separate dot row; and Emerge replaces arrows/dots entirely with a bottom nav dock — clickable per-slide cards plus a chevron pair — whose reveal transition uncovers each incoming slide from the bottom edge up, identically regardless of direction. Full keyboard/ARIA carousel semantics, a mandatory pause control whenever Auto-Play is on, and a reduced-motion collapse for every transition.' },
+  'forms':            { label: 'OptiFormsContainerData', cmsKey: 'OptiFormsContainerData',  description: "Built-in Optimizely Forms. Authored entirely in the CMS's Forms editor — text/number/range/choice/selection/textarea/url fields, a submit action, and optional show/hide dependency rules — then dropped onto a page as a section. This demo renders a real form authored in the connected CMS instance, not static mock data." },
 }
 
 export function generateStaticParams() {
@@ -129,7 +141,7 @@ function BlockHeader({ slug }: { slug: BlockSlug }) {
   return (
     <div className="px-md pt-xl pb-lg lg:px-lg">
       <SectionLabel index={`Blocks · ${meta.cmsKey}`} title={meta.label} />
-      <p className="text-body leading-body text-fg-muted max-w-[65ch]">{meta.description}</p>
+      <p className="text-body leading-body text-fg-muted max-w-[100ch]">{meta.description}</p>
     </div>
   )
 }
@@ -2502,7 +2514,7 @@ function PractitionerListingShowcase() {
 
       <div className="px-md pb-sm lg:px-lg pt-md">
         <p className="text-label text-fg-muted/60 leading-body max-w-[65ch]">
-          In production, practitioners are fetched at render time from Practitioner Profiles, automatically scoped to the current site via the Site Key field. The showcase uses static fixtures across three verticals so every filter and empty state is exercisable. Search by a name or a specialty; the specialty, location, and language dropdowns list only values present in the loaded set, with multiple selections allowed per filter.
+          In production, practitioners are fetched at render time from Practitioner Profiles, automatically scoped to the current site via the Site Key field. The showcase uses static fixtures across three verticals so every filter and empty state is exercisable. Search by a name (“Vargas”) or a specialty (“tax”); the specialty, location, and language dropdowns list only values present in the loaded set, with multiple selections allowed per filter.
         </p>
       </div>
 
@@ -2565,21 +2577,21 @@ const MOCK_LOCATIONS: LocationData[] = [
     imageUrl: LOC_IMG_HOSPITAL,
     address: '1 Gustave L. Levy Pl, New York, NY 10029',
     details: { html: '<p>Level I trauma center. Emergency department open 24/7. Visitor parking on-site; valet at the main entrance.</p>' },
-    url: '/locations/memorial-medical-center',
+    url: '', // Real OT_LocationProfile records never carry a url — see lib/locations.ts.
     coordinates: { lat: 40.7900, lon: -73.9526 },
   },
   {
     key: 'loc-downtown-clinic', locationName: 'Downtown Health Clinic', locationLabel: 'Clinic',
     address: '462 First Ave, New York, NY 10016',
     details: { html: '<p>Primary and urgent care, Mon–Sat 8am–8pm. Walk-ins welcome. Wheelchair accessible.</p>' },
-    url: '/locations/downtown-health-clinic',
+    url: '',
     coordinates: { lat: 40.7397, lon: -73.9754 },
   },
   {
     key: 'loc-brooklyn-pharmacy', locationName: 'Brooklyn Pharmacy', locationLabel: 'Pharmacy',
     address: '150 55th St, Brooklyn, NY 11220',
     details: { html: '<p>Full-service pharmacy with same-day prescription pickup and immunizations. Drive-through available.</p>' },
-    url: '/locations/brooklyn-pharmacy',
+    url: '',
     coordinates: { lat: 40.6360, lon: -74.0170 },
   },
 
@@ -2589,14 +2601,14 @@ const MOCK_LOCATIONS: LocationData[] = [
     imageUrl: LOC_IMG_HQ,
     address: '1 Financial Center, Boston, MA 02111',
     details: { html: '<p>Global headquarters. Reception on the 12th floor; visitor badges required. Steps from South Station.</p>' },
-    url: '/locations/boston-headquarters',
+    url: '',
     coordinates: { lat: 42.3553, lon: -71.0557 },
   },
   {
     key: 'loc-ny-office', locationName: 'New York Office', locationLabel: 'Office',
     address: '429 11th Ave, New York, NY 10001',
     details: { html: '<p>Sales and customer success teams. Hudson Yards / West Side. By appointment.</p>' },
-    url: '/locations/new-york-office',
+    url: '',
     coordinates: { lat: 40.7550, lon: -74.0020 },
   },
 ]
@@ -2866,6 +2878,26 @@ function ComparisonTableShowcase() {
   )
 }
 
+// Real content authored in the connected CMS instance — not mock data, so
+// this demo actually proves the OptiForms adapter fetch/render/submit path
+// works end to end against a genuine Optimizely Forms container.
+const FORMS_DEMO_CONTENT_KEY = 'c8f200bda122468993b91aea1a19235f'
+
+function FormsShowcase() {
+  return (
+    <>
+      <BlockHeader slug="forms" />
+      <VariantGroup
+        label="Live form · Form UI Testing"
+        note="Fetched by content key from the connected CMS instance, exactly as it renders when placed on a real page."
+      />
+      <div className="px-md pb-xl lg:px-lg">
+        <OptiFormsContainerDataAdapter content={{ _metadata: { key: FORMS_DEMO_CONTENT_KEY } }} />
+      </div>
+    </>
+  )
+}
+
 export default async function ShowcaseBlockPage({ params }: Props) {
   const { block } = await params
 
@@ -2878,10 +2910,13 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'image':        return <><BlockHeader slug="image" /><ImagePlayground /></>
     case 'video':        return <><BlockHeader slug="video" /><VideoPlayground /></>
     case 'stat':         return <><BlockHeader slug="stat" /><StatPlayground /></>
+    case 'stat-item':    return <><BlockHeader slug="stat-item" /><StatItemPlayground /></>
     case 'feature-grid': return <><BlockHeader slug="feature-grid" /><FeatureGridPlayground /></>
+    case 'feature-item': return <><BlockHeader slug="feature-item" /><FeatureItemPlayground /></>
     case 'trust-rail':   return <><BlockHeader slug="trust-rail" /><TrustRailPlayground /></>
     case 'accordion':    return <><BlockHeader slug="accordion" /><AccordionPlayground /></>
     case 'tabs':         return <><BlockHeader slug="tabs" /><TabsPlayground /></>
+    case 'tab-item':     return <><BlockHeader slug="tab-item" /><TabItemPlayground /></>
     case 'blog-feed':    return <BlogFeedShowcase />
     case 'button':       return <><BlockHeader slug="button" /><ButtonPlayground /></>
     case 'chart':        return <ChartShowcase />
@@ -2898,6 +2933,8 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'disclosure':              return <><BlockHeader slug="disclosure" /><DisclosurePlayground /></>
     case 'token-manager':           return <><BlockHeader slug="token-manager" /><TokenManagerPlayground /></>
     case 'carousel':                return <><BlockHeader slug="carousel" /><CarouselPlayground /></>
+    case 'slider':                  return <><BlockHeader slug="slider" /><SliderPlayground /></>
+    case 'forms':                   return <FormsShowcase />
     default:                 return notFound()
   }
 }

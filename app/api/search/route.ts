@@ -4,8 +4,27 @@ import { DEFAULT_LOCALE } from '@/lib/i18n/config'
 import type { SearchResult } from '@/lib/search'
 import { formatEventLocation } from '@/lib/eventFormat'
 
+// Named entities TinyMCE commonly emits in authored rich text (curly quotes,
+// dashes, ellipsis) plus the standard XML set. Numeric/hex refs (&#8217; etc.)
+// are handled generically below.
+const HTML_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“',
+  ndash: '–', mdash: '—', hellip: '…',
+}
+
+function decodeEntities(text: string): string {
+  return text.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, ent: string) => {
+    if (ent[0] === '#') {
+      const code = ent[1] === 'x' || ent[1] === 'X' ? parseInt(ent.slice(2), 16) : parseInt(ent.slice(1), 10)
+      return Number.isNaN(code) ? match : String.fromCodePoint(code)
+    }
+    return HTML_ENTITIES[ent] ?? match
+  })
+}
+
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220)
+  return decodeEntities(html.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim().slice(0, 220)
 }
 
 function fulltextClause(semantic: boolean): string {
@@ -142,8 +161,53 @@ function buildPractitionerProfileQuery(withSiteKey: boolean): string {
           firstName
           lastName
           credentials
+          title
           headshot { url { default } }
           bio { html }
+        }
+      }
+    }
+  `
+}
+
+// Location search — OT_LocationProfile is a URL-less shared component (like
+// OT_PractitionerProfile) but has no linked page to join through, so it is
+// scoped directly by its own queryable `siteKey` field rather than a domain
+// join (mirrors lib/locations.ts's getAllLocations). LocationCard is purely
+// informational and never links out, so no URL resolution is needed here.
+//
+// Semantic ranking matters a lot more here than for blogs/practitioners: the
+// only searchable fields are locationName/locationLabel (short proper nouns,
+// e.g. "Monroe Carell Jr. Children's Hospital"), so a literal query like
+// "pediatric" or "knee replacement" has near-zero keyword overlap with the
+// record. Plain RELEVANCE fulltext returns nothing; SEMANTIC ranking is what
+// lets Content Graph match "pediatric" to a hospital named after a children's
+// specialty. Mirrors buildBlogQuery's semantic/non-semantic split.
+function buildLocationProfileQuery(withSiteKey: boolean, semantic: boolean): string {
+  const siteKeyVar    = withSiteKey ? ', $siteKey: String' : ''
+  const siteKeyFilter = withSiteKey ? '\n          siteKey: { eq: $siteKey }' : ''
+  const ranking       = semantic
+    ? 'orderBy: { _ranking: SEMANTIC, _semanticWeight: 0.3 }'
+    : 'orderBy: { _ranking: RELEVANCE }'
+  return `
+    query SearchLocations($query: String!, $limit: Int!, $locale: String!${siteKeyVar}) {
+      OT_LocationProfile(
+        ${ranking}
+        where: {
+          _fulltext: { match: $query, fuzzy: true, synonyms: ONE }
+          _metadata: { locale: { eq: $locale } }${siteKeyFilter}
+        }
+        limit: $limit
+        tracking: { phrase: $query, source: "/search" }
+      ) {
+        items {
+          _track
+          _metadata { key }
+          locationName
+          locationLabel
+          image { url { default } }
+          address
+          details { html }
         }
       }
     }
@@ -306,6 +370,9 @@ export async function GET(req: NextRequest) {
     try {
       const scopeData  = await getClient().request(SCOPE_QUERY, {})
       const themeItems: any[] = (scopeData as any)?.OT_ThemeManager?.items ?? []
+      // Exact host match first; no fallback to themeItems[0] — an unmatched
+      // host means we cannot reliably identify the site, so proceed without
+      // domain restriction rather than filtering to the wrong site's content.
       const matched = themeItems.find((i: any) => i.frontEndDomain === host) ?? null
       if (matched) {
         domainResolved = true
@@ -323,6 +390,8 @@ export async function GET(req: NextRequest) {
       // scope unavailable — domainResolved stays false
     }
   }
+  // When domainParam is a localhost value: filterBase stays null → no domain
+  // filter in local dev, which is the safe default for a non-unique host.
 
   // Safety valve: if we cannot identify which site this request belongs to,
   // return nothing. This prevents content from every site on the shared CMS
@@ -337,6 +406,12 @@ export async function GET(req: NextRequest) {
   // so Content Graph handles site isolation natively.
   const withDomain = !allSites && filterBase !== null
   const domainVars = withDomain ? { domain: filterBase } : {}
+
+  // siteKey scoping for URL-less shared components (OT_LocationProfile) that
+  // have no _metadata.url.base to join against — derived from the same
+  // ThemeManager-resolved host as filterBase, minus the https:// prefix.
+  const siteKeyValue = filterBase ? filterBase.replace(/^https?:\/\//, '') : null
+  const withSiteKey  = !allSites && siteKeyValue !== null
 
   // locale is always included — every query builder declares $locale: String!
   const baseVars = { query: q, limit, locale, ...domainVars }
@@ -418,7 +493,7 @@ export async function GET(req: NextRequest) {
   // BlankExperience/_Content blocks so the resolved page keys land in `seen`
   // first — OT_PractitionerPage is an _experience, so the generic _Content
   // fallback would otherwise re-emit it as a bare Page without the headshot.
-  if (type === 'all' || type === 'Page' || type === 'Practitioner') {
+  if (type === 'all' || type === 'Practitioner') {
     try {
       const profileVars = { query: q, limit, locale, ...(siteKey ? { siteKey } : {}) }
       const profileData = await getClient().request(buildPractitionerProfileQuery(siteKey !== null), profileVars)
@@ -456,17 +531,16 @@ export async function GET(req: NextRequest) {
             : (page._metadata.displayName ?? 'Untitled')
           const bioHtml     = (profile.bio?.html as string | undefined) || undefined
 
-          const resultType = (type === 'Practitioner') ? 'Practitioner' : 'Page'
           results.push({
             id:                pageKey,
             title,
             url:               absoluteUrl(page._metadata.url.default, page._metadata.url.base) as string,
-            type:              resultType,
+            type:              'Practitioner',
             published:         page._metadata.published || undefined,
             excerpt:           bioHtml ? stripHtml(bioHtml) : undefined,
             imageUrl:          profile.headshot?.url?.default || undefined,
-            credentials:       (profile.credentials as string | undefined) || undefined,
-            practitionerTitle: undefined,
+            credentials:       credentials || undefined,
+            practitionerTitle: (profile.title as string | undefined) || undefined,
             _track:            withTrackAuth(profile._track),
           })
         }
@@ -476,9 +550,44 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── Location results ─────────────────────────────────────────────────────
+  // OT_LocationProfile is informational only (LocationCard never links out),
+  // so results are emitted with an empty url and scoped by siteKey instead of
+  // a domain/url join — see buildLocationProfileQuery above.
+  if (type === 'all' || type === 'Location') {
+    try {
+      const locationVars = { query: q, limit, locale, ...(withSiteKey ? { siteKey: siteKeyValue } : {}) }
+      const locationQuery = buildLocationProfileQuery(withSiteKey, semantic)
+      const data = await getClient().request(locationQuery, locationVars)
+      const items: any[] = (data as any)?.OT_LocationProfile?.items ?? []
+      for (const item of items) {
+        const key = item._metadata?.key
+        if (!key || seen.has(key)) continue
+        seen.add(key)
+        const detailsHtml = (item.details?.html as string | undefined) || undefined
+        results.push({
+          id:            key,
+          title:         item.locationName ?? 'Untitled',
+          url:           '',
+          type:          'Location',
+          locationBadge: item.locationLabel || undefined,
+          address:       item.address || undefined,
+          excerpt:       detailsHtml ? stripHtml(detailsHtml) : undefined,
+          imageUrl:      item.image?.url?.default || undefined,
+          _track:        withTrackAuth(item._track),
+        })
+      }
+    } catch (err) {
+      console.error('[search] location query failed:', err)
+    }
+  }
+
   // ── Experience results (typed — enriched with seoDescription / ogImage) ──
   // Runs before the generic _Content query so enriched data wins the seen-Set
   // deduplication; _Content then fills in any remaining non-experience pages.
+  // Gated on 'Experience' (what the Topic Hub's "experiences" bucket actually
+  // requests) as well as 'Page' (the typeMap's fallback for any other bucket
+  // content type not listed above).
   if (type === 'all' || type === 'Page' || type === 'Experience') {
     try {
       const expQuery = buildBlankExperienceQuery(withDomain)

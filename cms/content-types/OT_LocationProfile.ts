@@ -76,7 +76,7 @@ export const OT_LocationProfile = contentType({
       type:         'string',
       maxLength:    120,
       displayName:  'Site Key',
-      description:  'The domain of the site this location belongs to — e.g. "optitech-nextjs-tim.vercel.app". Must match the Front End Domain set in ThemeManager. Used to scope location search results to the correct site.',
+      description:  'The domain of the site this location belongs to — e.g. "your-site.vercel.app". Must match the Front End Domain set in ThemeManager. Used to scope location search results to the correct site.',
       group:        'OT_Content',
       sortOrder:    70,
       indexingType: 'queryable',

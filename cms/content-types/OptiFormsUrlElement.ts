@@ -11,5 +11,6 @@ export const OptiFormsUrlElement = contentType({
     Tooltip:        { type: 'string', displayName: 'Tooltip',         isLocalized: true },
     PredefinedValue:{ type: 'string', displayName: 'Predefined Value' },
     Validators:     { type: 'json',   displayName: 'Validators' },
+    SubmissionFieldName: { type: 'string', displayName: 'Submission Field Name' },
   },
 })
