@@ -95,7 +95,7 @@ const headlineCva = cva(
 // Spotlight-only type voice: thin-but-large headline, medium-bold body — the
 // opposite weight pairing from Overlap/Diagonal's extrabold headline + regular
 // body, so the direction reads differently even set in the same family/scale.
-const spotlightHeadlineCva = cva("text-hero font-light leading-display tracking-display", {
+const spotlightHeadlineCva = cva("text-hero font-light leading-display tracking-display text-balance", {
   variants: {
     color: {
       brand:   "text-fg-on-brand",
@@ -164,8 +164,12 @@ const secondaryCtaCva = cva(
   }
 );
 
+// Editorial Split is a flush two-panel layout — the visual panel sits directly
+// against the square text panel with no gap, so it always stays sharp-cornered
+// (rounded-none) even when the theme's Corner Style axis is Soft/Rounded;
+// rounding just this one edge would misalign it against the text panel.
 const visualPanelCva = cva(
-  "relative overflow-hidden rounded-ot-surface aspect-video lg:aspect-auto lg:flex-1",
+  "relative overflow-hidden rounded-none aspect-video lg:aspect-auto lg:flex-1",
   {
     variants: {
       color: {
@@ -207,7 +211,11 @@ export default function HeroBlock({
   styleOptions = {},
   pa = () => ({}),
 }: HeroBlockProps) {
-  const { direction = "editorialSplit", layout = "imageRight", color = "brand", animation = "none" } = styleOptions;
+  const { direction = "editorialSplit", layout: rawLayout = "imageRight", color = "brand", animation = "none" } = styleOptions;
+  // Display-template settings are free strings in the CMS (AI-authored or hand-edited pages can
+  // carry values like "split"). An unknown layout would drop the row direction and collapse the
+  // visual panel to a sliver, so anything other than imageLeft falls back to the default.
+  const layout: "imageRight" | "imageLeft" = rawLayout === "imageLeft" ? "imageLeft" : "imageRight";
 
   // Non-default art directions are self-contained compositions; delegate to them.
   // They reuse the same content + the color/animation modifiers.
@@ -241,7 +249,7 @@ export default function HeroBlock({
   const atmosLayout = hasVisual ? layout : "full"
 
   return (
-    <section className={sectionCva({ layout })} aria-label="Hero">
+    <section className={sectionCva({ layout })} aria-label="Hero" data-block="hero">
 
       {/* ── Text panel ── */}
       {/* data-theme="dark" on brand panels ensures tokens like bg-canvas, text-fg,
@@ -312,7 +320,28 @@ export default function HeroBlock({
         </div>
       )}
 
+      {eyebrow && <HeroMarquee text={eyebrow} />}
     </section>
+  );
+}
+
+/**
+ * Campaign-look marquee tape: the eyebrow repeated in a slow loop. Hidden everywhere
+ * (display:none); only the Poster and Stage looks of OT_CampaignLandingPage switch it on
+ * (components/campaign/campaign-looks.css). Decorative duplicate of the eyebrow, so it
+ * is aria-hidden. Two identical halves let the track loop seamlessly at -50%.
+ */
+function HeroMarquee({ text }: { text: string }) {
+  const half = Array.from({ length: 5 }, (_, i) => (
+    <span key={i} className="hero-marquee__item">{text}</span>
+  ));
+  return (
+    <div className="hero-marquee hidden" aria-hidden="true">
+      <div className="hero-marquee__track">
+        <div className="hero-marquee__half">{half}</div>
+        <div className="hero-marquee__half">{half}</div>
+      </div>
+    </div>
   );
 }
 
@@ -421,12 +450,12 @@ function SpotlightHero({
           from Overlap/Diagonal's extrabold headline + regular body. */}
       <h1 className={spotlightHeadlineCva({ color })} {...pa("headline")}>{headline}</h1>
       {body && <p className={`${spotlightBodyCva({ color })} mt-sm`} {...pa("body")}>{body}</p>}
-      <HeroCtas color={color} primaryCta={primaryCta} secondaryCta={secondaryCta} pa={pa} className="mt-lg" />
+      <HeroCtas color={color} primaryCta={primaryCta} secondaryCta={secondaryCta} pa={pa} className="mt-md" />
     </div>
   );
 
   return (
-    <section className="relative overflow-hidden bg-canvas px-md py-lg lg:px-lg lg:py-xl" aria-label="Hero">
+    <section className="relative overflow-hidden bg-canvas px-md py-lg lg:px-lg lg:py-xl" aria-label="Hero" data-block="hero">
       <div className="hero-spotlight-aura" aria-hidden />
       {hasVisual ? (
         // A fixed aspect ratio for the image scales WITH viewport width (wider
@@ -436,9 +465,12 @@ function SpotlightHero({
         // the card's real height (robust at any width), and only the visible
         // photo frame gets a small FIXED pixel overhang top/bottom — "slightly
         // taller" by a constant amount, not a ratio that compounds with width.
-        <div className="relative z-10 flex flex-col gap-lg lg:flex-row lg:items-center lg:gap-xl">
+        // The row is width-capped and centered so the pair stays close on
+        // ultrawide screens, and the photo slides a FIXED 56px under the card's
+        // edge (no gap) so the two read as one composition.
+        <div className="relative z-10 mx-auto flex w-full max-w-360 flex-col gap-lg lg:flex-row lg:items-center lg:gap-0">
           <div
-            className={`relative w-full aspect-[4/3] lg:aspect-auto lg:flex-1 lg:self-stretch ${imageLeft ? "lg:order-1" : "lg:order-2"}`}
+            className={`relative w-full aspect-[4/3] lg:aspect-auto lg:flex-1 lg:self-stretch ${imageLeft ? "lg:order-1 lg:-mr-14" : "lg:order-2 lg:-ml-14"}`}
             {...pa("visual")}
           >
             {/* Offset frame: a second bordered plate set behind the photo, its own
@@ -446,7 +478,7 @@ function SpotlightHero({
                 out on two sides — no rotation, no drop-shadow blur doing the work. */}
             <div
               className={`hero-spotlight-frame-offset absolute inset-0 lg:-top-3 lg:-bottom-3 rounded-ot-surface ${
-                imageLeft ? "translate-x-3 translate-y-3" : "-translate-x-3 translate-y-3"
+                imageLeft ? "-translate-x-3 translate-y-3" : "translate-x-3 translate-y-3"
               }`}
               aria-hidden
             />
@@ -497,7 +529,7 @@ function OverlapHero({
 
   if (!hasVisual) {
     return (
-      <section className="bg-canvas px-md py-lg lg:px-lg lg:py-xl" aria-label="Hero">
+      <section className="bg-canvas px-md py-lg lg:px-lg lg:py-xl" aria-label="Hero" data-block="hero">
         <div
           className={`hero-overlap-plate rounded-ot-surface relative mx-auto max-w-4xl ${groundCva({ color })} p-lg lg:p-2xl ${anim}`}
           data-theme={color === "brand" ? "dark" : undefined}
@@ -512,7 +544,7 @@ function OverlapHero({
   }
 
   return (
-    <section className="bg-canvas px-md py-lg lg:px-lg lg:py-xl" aria-label="Hero">
+    <section className="bg-canvas px-md py-lg lg:px-lg lg:py-xl" aria-label="Hero" data-block="hero">
       <div className="relative z-10 flex flex-col gap-lg lg:flex-row lg:items-center lg:gap-0">
         <div
           className={`relative w-full aspect-[4/3] lg:aspect-auto lg:h-96 lg:flex-1 overflow-hidden rounded-ot-surface ${
@@ -570,7 +602,7 @@ function DiagonalHero({
     <section
       className={`${groundCva({ color })} relative overflow-hidden`}
       data-theme={color === "brand" ? "dark" : undefined}
-      aria-label="Hero"
+      aria-label="Hero" data-block="hero"
     >
       {hasVisual && (
         <>

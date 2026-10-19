@@ -20,7 +20,7 @@ export const OT_ThemeManager = contentType({
 
     // Logo
     logo:           { type: 'contentReference', allowedTypes: ['_image'], displayName: 'Logo',                                          group: 'OT_Content', sortOrder: 5   },
-    logoAlt:        { type: 'string', maxLength: 100,   displayName: 'Logo Alt Text',                                   group: 'OT_Content', sortOrder: 10  },
+    logoAlt:        { type: 'string', isLocalized: true, maxLength: 100,   displayName: 'Logo Alt Text',                                   group: 'OT_Content', sortOrder: 10  },
     logoFit: {
       type: 'string',
       format: 'selectOne',
@@ -48,7 +48,8 @@ export const OT_ThemeManager = contentType({
     },
 
     // Header CTA
-    ctaLabel: { type: 'string', maxLength: 40, displayName: 'CTA Label', group: 'OT_Content', sortOrder: 20 },
+    ctaLabel: { type: 'string', isLocalized: true, maxLength: 40, displayName: 'CTA Label', group: 'OT_Content', sortOrder: 20 },
+    // Shared — Header locale-prefixes the resolved path, so one URL serves every locale.
     ctaUrl:   { type: 'url',   displayName: 'CTA URL',   group: 'OT_Content', sortOrder: 30 },
 
     // Search
@@ -66,8 +67,11 @@ export const OT_ThemeManager = contentType({
     },
 
     // Header Navigation
+    // Localized at the array level (like OT_FooterBlock.links) — `link` properties
+    // can't carry isLocalized themselves, so each locale owns its whole nav tree.
     primaryNavigation: {
       type: 'array',
+      isLocalized: true,
       displayName: 'Primary Navigation',
       description: 'Top-level nav links. Each item uses a native Link picker (supports internal pages, external URLs, and DAM files). Add Sub-Navigation Items inside each entry to create a dropdown.',
       group: 'OT_Content',
@@ -138,6 +142,8 @@ export const OT_ThemeManager = contentType({
         { value: 'sora',          displayName: 'Sora — squared, technical' },
         { value: 'plusJakarta',   displayName: 'Plus Jakarta Sans — warm, modern' },
         { value: 'manrope',       displayName: 'Manrope — clean, minimal' },
+        { value: 'hankenGrotesk', displayName: 'Hanken Grotesk — neo-grotesk, fashion / editorial retail' },
+        { value: 'fraunces',      displayName: 'Fraunces — soft serif, warm and characterful (serif)' },
       ],
     },
     motionIntensity: {
@@ -170,6 +176,7 @@ export const OT_ThemeManager = contentType({
     // ── SEO / Search & Discovery ──────────────────────────────────────────────
     siteName: {
       type: 'string',
+      isLocalized: true,
       displayName: 'Site Name',
       description: 'Used in the browser tab title template ("Page Title | Site Name") and og:site_name.',
       group: 'OT_SEO',
@@ -177,6 +184,7 @@ export const OT_ThemeManager = contentType({
     },
     defaultSeoDescription: {
       type: 'string',
+      isLocalized: true,
       displayName: 'Default Meta Description',
       description: 'Fallback description for pages that have no Meta Description set.',
       group: 'OT_SEO',
@@ -199,6 +207,7 @@ export const OT_ThemeManager = contentType({
     },
     organizationDescription: {
       type: 'string',
+      isLocalized: true,
       displayName: 'Organization Summary',
       description: 'One or two sentences describing the organization. Injected into the Organization JSON-LD block on every page — used by AI engines to establish entity identity.',
       group: 'OT_SEO',
@@ -271,6 +280,39 @@ export const OT_ThemeManager = contentType({
       description: 'GA4 Measurement ID (e.g. G-LGLHDKGRA4F). When set, the gtag.js snippet is injected for this domain and pageviews are tracked automatically.',
       group: 'OT_Integrations',
       sortOrder: 80,
+    },
+
+    // ── Mock commerce (opt-in per site) ───────────────────────────────────────
+    // Read by lib/commerce/settings.ts through its OWN query (never THEME_QUERY),
+    // so a Graph schema lag can only switch commerce off — never blank a site's
+    // theme. Unset/false = no bag, wishlist, PLP data or product routes at all.
+    enableCommerce: {
+      type: 'boolean',
+      displayName: 'Enable Mock Commerce (bag, wishlist, product pages)',
+      description: 'Turns on the storefront for this domain: bag and wishlist icons in the header, the mini-bag, /products/<handle> product pages, and live data in Product Listing / Commerce Flow blocks. Orders are simulated in the visitor\'s browser only — no commerce system is called.',
+      group: 'OT_Integrations',
+      sortOrder: 90,
+    },
+    catalogId: {
+      type: 'string',
+      maxLength: 40,
+      displayName: 'Product Catalog ID',
+      description: 'Which catalog in the Optimizely Graph product source this site sells (e.g. apparel). Must match the CatalogId pushed by scripts/catalog/push-catalog.mjs (or the OCP connector).',
+      group: 'OT_Integrations',
+      sortOrder: 95,
+    },
+    currencyCode: {
+      type: 'string',
+      format: 'selectOne',
+      displayName: 'Store Currency',
+      description: 'Default currency for prices, the bag and checkout. French and German locales show EUR; English shows this currency.',
+      group: 'OT_Integrations',
+      sortOrder: 100,
+      enum: [
+        { value: 'USD', displayName: 'US dollar (USD)' },
+        { value: 'GBP', displayName: 'Pound sterling (GBP)' },
+        { value: 'EUR', displayName: 'Euro (EUR)' },
+      ],
     },
   },
 })

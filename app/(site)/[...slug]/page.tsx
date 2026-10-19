@@ -1,4 +1,3 @@
-import { cache }                from 'react'
 import { notFound, redirect }  from 'next/navigation'
 import { draftMode }           from 'next/headers'
 import type { Metadata }       from 'next'
@@ -28,38 +27,42 @@ import BlogPage                from '@/components/pages/BlogPage'
 import CampaignPage            from '@/components/pages/CampaignPage'
 import EventPage               from '@/components/pages/EventPage'
 import TopicHubPage            from '@/components/pages/TopicHubPage'
+import CampaignLandingFrame    from '@/components/campaign/CampaignLandingFrame'
+import { fetchPageContent }    from '@/lib/pageContent'
 import Script                  from 'next/script'
 import { DraftStateBanner }    from '@/components/preview/DraftStateBanner'
 import { ExternalPreviewLinkPanel } from '@/components/preview/ExternalPreviewLinkPanel'
+import { ReviewCommentWidget }    from '@/components/preview/ReviewCommentWidget'
+import { ReviewCommentsStrip }    from '@/components/preview/ReviewCommentsStrip'
+import { reviewCommentsEnabled }  from '@/lib/review-comments'
+import { buildExternalPreviewUrl, contentPathname, type PreviewableContent } from '@/lib/external-preview'
 import { buildPageMetadata, type PageSeoFields } from '@/lib/metadata'
 import { buildJsonLd }         from '@/lib/structured-data'
 import JsonLd                  from '@/components/seo/JsonLd'
 import type { Locale }         from '@/lib/i18n/config'
+import { getCommerceSettings, currencyForLocale, getMarketCookie } from '@/lib/commerce/settings'
+import { matchPdpPath, resolvePdp, previewProductFor } from '@/lib/commerce/pdp'
+import ProductDetailPage from '@/components/pages/ProductDetailPage'
 
 export const revalidate = 60
+
+/** Fields the slug route reads from an OT_CampaignLandingPage (see cms/content-types). */
+type CampaignLandingFields = PageSeoFields & {
+  campaignLook?:   string | null
+  accentOverride?: string | null
+  motionLevel?:    string | null
+  ctaLabel?:       string | null
+  ctaUrl?:         { default?: string | null } | string | null
+  returnLabel?:    string | null
+  footerRef?:      { key?: string | null } | null
+  formRef?:        { key?: string | null } | null
+  formHeading?:    string | null
+  _metadata?:      { displayName?: string | null } | null
+}
 
 type Props = {
   params:       Promise<{ slug: string[] }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
-}
-
-// ── Per-request content cache ─────────────────────────────────────────────────
-//
-// React cache() deduplicates calls with the same arguments within one React
-// render tree. generateMetadata and CmsPage both call this for the same path,
-// locale, and baseUrl — the second call is a no-op (same cached result).
-const fetchPageContent = cache(async (path: string, locale: Locale, baseUrl: string) =>
-  getLocalizedContentByPath(path, locale, baseUrl),
-)
-
-// Resolves an absolute or relative URL string to just the pathname.
-function toPathname(raw: string | null | undefined): string | null {
-  if (!raw) return null
-  try {
-    return raw.startsWith('http') ? new URL(raw).pathname : raw
-  } catch {
-    return raw.startsWith('/') ? raw : null
-  }
 }
 
 // Recursively walks a Visual Builder composition tree and collects all
@@ -151,6 +154,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     )
   }
 
+  // Campaign landing page — _experience; fall back to the page name when the
+  // editor leaves the SEO title blank, so the tab/title is never just the site name.
+  if (exp?.__typename === 'OT_CampaignLandingPage') {
+    const landing = exp as CampaignLandingFields
+    return buildPageMetadata(
+      { ...landing, seoTitle: landing.seoTitle ?? landing._metadata?.displayName },
+      settings ?? {},
+      path,
+    )
+  }
+
   // Practitioner page — _experience; build SEO from page fields with a smart
   // fallback to the referenced practitioner's name + credentials + primary area.
   if (exp?.__typename === 'OT_PractitionerPage') {
@@ -179,6 +193,40 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return buildPageMetadata(seoFields, settings ?? {}, path)
   }
 
+  // Product detail template (visited directly or in Visual Builder) — never
+  // indexable; titled after its preview product.
+  if (exp?.__typename === 'OT_ProductDetailTemplate') {
+    const commerce = await getCommerceSettings(domain)
+    const product = commerce ? await previewProductFor(commerce.catalogId, (exp as any).previewHandle) : null
+    return buildPageMetadata(
+      { ...(exp as PageSeoFields), seoTitle: (exp as any).seoTitle ?? product?.name, noIndex: true },
+      settings ?? {},
+      path,
+    )
+  }
+
+  // Catalog product page — no CMS page at this path, commerce on, /products/<handle>.
+  const pdpHandle = !exp ? matchPdpPath(path) : null
+  if (pdpHandle) {
+    const commerce = await getCommerceSettings(domain)
+    const pdp = commerce ? await resolvePdp(pdpHandle, commerce.catalogId, locale, baseUrl, settings?.featureExperimentationSdkKey) : null
+    if (pdp) {
+      const t = pdp.template ?? {}
+      const hero = pdp.product.colours[0]?.images?.[0]
+      return buildPageMetadata(
+        {
+          seoTitle:       t.seoTitle ?? pdp.product.name,
+          seoDescription: t.seoDescription ?? pdp.product.description,
+          ogImage:        hero ? { url: { default: hero } } : undefined,
+          noIndex:        t.noIndex ?? false,
+          schemaType:     'Product',
+        },
+        settings ?? {},
+        path,
+      )
+    }
+  }
+
   return buildPageMetadata((exp ?? {}) as PageSeoFields, settings ?? {}, path)
 }
 
@@ -203,9 +251,62 @@ async function CmsPage({ params, searchParams }: Props) {
   // getSiteSettings is React cache()-wrapped — no extra round-trip.
   const settings = await getSiteSettings(domain, locale)
 
+  // ── External preview context ────────────────────────────────────────────────
+  // ext_preview=1 means this was reached via an External Preview Link (the
+  // reviewer followed the shareable URL, not the CMS editor's own preview
+  // frame). Require an actual preview_token for CMS edit so a stale draft-mode
+  // cookie on the public site never triggers editor-only UI.
+  const isExternalPreview = dm.isEnabled && sp_str('ext_preview') === '1'
+  const isCmsEdit         = dm.isEnabled && !!sp_str('preview_token') && !isExternalPreview
+
+  // Draft banner for external reviewers + shareable-link panel for CMS editors.
+  // Applies to every page type; the link only appears when the page has
+  // enableExternalPreview: true.
+  const renderPreviewChrome = (content: PreviewableContent | null | undefined, banner: { headline?: string | null; topic?: string | null; authorName?: string }) => {
+    const externalPreviewUrl = isCmsEdit
+      ? buildExternalPreviewUrl({
+          enabled:      content?.enableExternalPreview,
+          baseUrl,
+          previewToken: sp_str('preview_token'),
+          key:          sp_str('key'),
+          ver:          sp_str('ver'),
+          loc:          sp_str('loc') || locale,
+          path:         contentPathname(content) ?? path,
+        })
+      : null
+    return (
+      <>
+        {isExternalPreview && (
+          <DraftStateBanner
+            headline={banner.headline ?? ''}
+            topic={banner.topic ?? undefined}
+            version={sp_str('ver') || undefined}
+            locale={sp_str('loc')  || locale}
+            authorName={banner.authorName}
+          />
+        )}
+        {isExternalPreview && sp_str('key') && reviewCommentsEnabled() && (
+          <ReviewCommentWidget
+            contentKey={sp_str('key')}
+            version={sp_str('ver')}
+            locale={sp_str('loc') || locale}
+            path={contentPathname(content) ?? path}
+            title={banner.headline ?? undefined}
+          />
+        )}
+        {externalPreviewUrl && (
+          <>
+            <ExternalPreviewLinkPanel url={externalPreviewUrl} topic={banner.topic ?? undefined} />
+            <ReviewCommentsStrip contentKey={sp_str('key')} />
+          </>
+        )}
+      </>
+    )
+  }
+
   // Full page URL for JSON-LD — prefer the configured site URL so canonical
   // references in structured data always point to the production domain.
-  const siteOrigin  = process.env.NEXT_PUBLIC_SITE_URL ?? baseUrl
+  const siteOrigin  = (process.env.NEXT_PUBLIC_SITE_URL ?? baseUrl).replace(/\/$/, '')
   const fullPageUrl = `${siteOrigin}${path}`
 
   let exp: any
@@ -309,13 +410,6 @@ async function CmsPage({ params, searchParams }: Props) {
       const latestPosts = await getLatestBlogPosts(contentKey, locale, baseUrl)
 
       if (blogContent) {
-        // ── Draft mode context ──────────────────────────────────────────────────
-        // ext_preview=1 means this was reached via an External Preview Link
-        // (the reviewer followed the shareable URL, not the CMS editor's own
-        // preview frame). Without this flag, dm.isEnabled means CMS edit mode.
-        const isExternalPreview = dm.isEnabled && sp_str('ext_preview') === '1'
-        const isCmsEdit         = dm.isEnabled && !!sp_str('preview_token') && !isExternalPreview
-
         // ── Author name for the draft banner ────────────────────────────────────
         // In preview mode blogContent comes from getPreviewContent which returns
         // the raw ContentReference (just { key }), not the resolved AuthorData.
@@ -328,32 +422,6 @@ async function CmsPage({ params, searchParams }: Props) {
             draftAuthorName = (await getAuthorName(authorKey)) ?? undefined
           }
         }
-
-        // ── CMS-side external preview link ──────────────────────────────────────
-        // Shown in the slug route when the CMS editor is viewing the blog page
-        // in draft mode and the content has enableExternalPreview: true.
-        // (Also shown in /preview page via ExternalPreviewLinkPanel — this
-        // covers the case where the CMS opens the draft through the slug URL.)
-        let externalPreviewUrl: string | null = null
-        if (isCmsEdit && blogContent.enableExternalPreview === true) {
-          const contentSlug = toPathname(
-            blogContent._metadata?.url?.hierarchical ??
-            blogContent._metadata?.url?.default
-          ) ?? path
-
-          const qs = new URLSearchParams({
-            preview_token: sp_str('preview_token'),
-            key:           sp_str('key'),
-            ver:           sp_str('ver'),
-            loc:           sp_str('loc') || locale,
-            ctx:           contentSlug,
-            ext_preview:   '1',
-          })
-          if (baseUrl) {
-            externalPreviewUrl = `${baseUrl}/api/draft?${qs}`
-          }
-        }
-        // ───────────────────────────────────────────────────────────────────────
 
         const blogJsonLd = buildJsonLd(
           blogContent as PageSeoFields,
@@ -369,24 +437,11 @@ async function CmsPage({ params, searchParams }: Props) {
             )}
             {dm.isEnabled && <NextPreviewComponent />}
 
-            {/* External reviewer's draft-state banner */}
-            {isExternalPreview && (
-              <DraftStateBanner
-                headline={blogContent.headline ?? ''}
-                topic={blogContent.topic    ?? undefined}
-                version={sp_str('ver')      || undefined}
-                locale={sp_str('loc')       || locale}
-                authorName={draftAuthorName}
-              />
-            )}
-
-            {/* CMS editor's shareable-link panel */}
-            {externalPreviewUrl && (
-              <ExternalPreviewLinkPanel
-                url={externalPreviewUrl}
-                topic={blogContent.topic ?? undefined}
-              />
-            )}
+            {renderPreviewChrome(blogContent, {
+              headline:   blogContent.headline,
+              topic:      blogContent.topic,
+              authorName: draftAuthorName,
+            })}
 
             <BlogPage content={blogContent} latestPosts={latestPosts} />
           </>
@@ -418,30 +473,6 @@ async function CmsPage({ params, searchParams }: Props) {
       }
       if (!campaignContent) return notFound()
 
-      // Require an actual preview_token so a stale draft-mode cookie on the
-      // public site never triggers editor-only UI (ExternalPreviewLinkPanel).
-      const isExternalPreview = dm.isEnabled && sp_str('ext_preview') === '1'
-      const isCmsEdit         = dm.isEnabled && !!sp_str('preview_token') && !isExternalPreview
-
-      let externalPreviewUrl: string | null = null
-      if (isCmsEdit && campaignContent.enableExternalPreview === true) {
-        const contentSlug = toPathname(
-          campaignContent._metadata?.url?.default
-        ) ?? path
-
-        const qs = new URLSearchParams({
-          preview_token: sp_str('preview_token'),
-          key:           sp_str('key'),
-          ver:           sp_str('ver'),
-          loc:           sp_str('loc') || locale,
-          ctx:           contentSlug,
-          ext_preview:   '1',
-        })
-        if (baseUrl) {
-          externalPreviewUrl = `${baseUrl}/api/draft?${qs}`
-        }
-      }
-
       const campaignJsonLd = buildJsonLd(
         campaignContent as PageSeoFields,
         settings ?? {},
@@ -456,17 +487,9 @@ async function CmsPage({ params, searchParams }: Props) {
           )}
           {dm.isEnabled && <NextPreviewComponent />}
 
-          {isExternalPreview && (
-            <DraftStateBanner
-              headline={campaignContent.seoTitle ?? campaignContent.heroSection?.headline ?? ''}
-              version={sp_str('ver') || undefined}
-              locale={sp_str('loc')  || locale}
-            />
-          )}
-
-          {externalPreviewUrl && (
-            <ExternalPreviewLinkPanel url={externalPreviewUrl} />
-          )}
+          {renderPreviewChrome(campaignContent, {
+            headline: campaignContent.seoTitle ?? campaignContent.heroSection?.headline,
+          })}
 
           <CampaignPage
             heroSection={campaignContent.heroSection ?? undefined}
@@ -499,6 +522,7 @@ async function CmsPage({ params, searchParams }: Props) {
               <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
             )}
             {dm.isEnabled && <NextPreviewComponent />}
+            {renderPreviewChrome(eventContent, { headline: eventContent.title })}
             <EventPage content={eventContent as any} />
           </>
         )
@@ -519,8 +543,32 @@ async function CmsPage({ params, searchParams }: Props) {
               <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
             )}
             {dm.isEnabled && <NextPreviewComponent />}
+            {renderPreviewChrome(hubContent, { headline: hubContent.headerName ?? hubContent.seoTitle })}
             <TopicHubPage config={hubContent as any} />
           </>
+        )
+      }
+    }
+
+    // Catalog product page — no CMS page exists at this path, the host has mock
+    // commerce enabled, and the path is /products/<handle>. The product comes
+    // from the Graph catalog; the below-the-fold layout is the matching
+    // OT_ProductDetailTemplate. A CMS page at the same path always wins (it was
+    // resolved above), so other sites' /products/* pages are unaffected.
+    const pdpHandle = !exp && !dm.isEnabled ? matchPdpPath(path) : null
+    if (pdpHandle) {
+      const commerce = await getCommerceSettings(domain)
+      const pdp = commerce ? await resolvePdp(pdpHandle, commerce.catalogId, locale, baseUrl, settings?.featureExperimentationSdkKey) : null
+      if (commerce && pdp) {
+        return (
+          <ProductDetailPage
+            product={pdp.product}
+            template={pdp.template}
+            currency={currencyForLocale(commerce, locale, await getMarketCookie())}
+            locale={locale}
+            site={settings ?? {}}
+            pageUrl={fullPageUrl}
+          />
         )
       }
     }
@@ -538,6 +586,52 @@ async function CmsPage({ params, searchParams }: Props) {
       redirect(`/preview?${qs}`)
     }
     notFound()
+  }
+
+  // Campaign landing page — _experience type rendered WITHOUT the site shell
+  // (app/(site)/layout.tsx drops it via lib/shellMode.ts). The locked frame supplies
+  // a slim campaign strip, the chosen look, the conversion form and a footer around
+  // the editor's free composition.
+  if (exp?.__typename === 'OT_CampaignLandingPage') {
+    const landing = exp as CampaignLandingFields
+    // Accordion FAQs on the page are emitted as FAQPage JSON-LD (answers in the
+    // static HTML for crawlers), same as the generic experience path below.
+    const landingFaqItems = exp?.composition?.nodes
+      ? extractAccordionFaqs(exp.composition.nodes)
+      : undefined
+    const landingJsonLd = buildJsonLd(
+      {
+        ...landing,
+        faqItems: landingFaqItems,
+        schemaType: landing.schemaType && landing.schemaType !== 'none' ? landing.schemaType : 'WebPage',
+      },
+      settings ?? {},
+      fullPageUrl,
+    )
+    return (
+      <>
+        <JsonLd data={landingJsonLd} />
+        {dm.isEnabled && cmsUrl && (
+          <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
+        )}
+        {dm.isEnabled && <NextPreviewComponent />}
+        {renderPreviewChrome(exp, { headline: exp.seoTitle ?? null })}
+        <CampaignLandingFrame
+          locale={locale}
+          look={landing.campaignLook}
+          accentOverride={landing.accentOverride}
+          motionLevel={landing.motionLevel}
+          ctaLabel={landing.ctaLabel}
+          ctaUrl={typeof landing.ctaUrl === 'string' ? landing.ctaUrl : landing.ctaUrl?.default}
+          returnLabel={landing.returnLabel}
+          footerKey={landing.footerRef?.key}
+          formKey={landing.formRef?.key}
+          formHeading={landing.formHeading}
+        >
+          <CompositionRenderer nodes={exp.composition.nodes} />
+        </CampaignLandingFrame>
+      </>
+    )
   }
 
   // Practitioner page — _experience type. The referenced practitioner record
@@ -571,6 +665,9 @@ async function CmsPage({ params, searchParams }: Props) {
           <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
         )}
         {dm.isEnabled && <NextPreviewComponent />}
+        {renderPreviewChrome(exp, {
+          headline: exp.seoTitle ?? (practitioner ? practitionerName(practitioner, false) : null),
+        })}
         {practitioner && (
           <>
             <PractitionerHeader
@@ -581,6 +678,34 @@ async function CmsPage({ params, searchParams }: Props) {
           </>
         )}
         <CompositionRenderer nodes={exp.composition.nodes} />
+      </>
+    )
+  }
+
+  // Product detail template — rendered with its preview product in the locked
+  // header so editors compose the below-the-fold content in context.
+  if (exp?.__typename === 'OT_ProductDetailTemplate') {
+    const commerce = await getCommerceSettings(domain)
+    const product = commerce ? await previewProductFor(commerce.catalogId, (exp as any).previewHandle) : null
+    return (
+      <>
+        {dm.isEnabled && cmsUrl && (
+          <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
+        )}
+        {dm.isEnabled && <NextPreviewComponent />}
+        {renderPreviewChrome(exp, { headline: exp.seoTitle ?? product?.name ?? exp._metadata?.displayName })}
+        {product && commerce ? (
+          <ProductDetailPage
+            product={product}
+            template={exp}
+            currency={currencyForLocale(commerce, locale, await getMarketCookie())}
+            locale={locale}
+            site={settings ?? {}}
+            pageUrl={fullPageUrl}
+          />
+        ) : (
+          <CompositionRenderer nodes={exp.composition.nodes} />
+        )}
       </>
     )
   }
@@ -604,6 +729,7 @@ async function CmsPage({ params, searchParams }: Props) {
         <Script src={`${cmsUrl}/util/javascript/communicationinjector.js`} />
       )}
       {dm.isEnabled && <NextPreviewComponent />}
+      {renderPreviewChrome(exp, { headline: exp.seoTitle ?? exp._metadata?.displayName })}
       <CompositionRenderer nodes={exp.composition.nodes} />
     </>
   )

@@ -1,7 +1,7 @@
 import type { Metadata }            from 'next'
 import Image                         from 'next/image'
 import { notFound }                  from 'next/navigation'
-import { SectionLabel }              from '../../components'
+import { SectionLabel, VariantGroup } from '../../components'
 import OT_HeroBlock                  from '@/cms/components/OT_HeroBlock'
 import OT_ButtonBlock                from '@/cms/components/OT_ButtonBlock'
 import OT_PrimaryTextBlock           from '@/cms/components/OT_PrimaryTextBlock'
@@ -31,7 +31,6 @@ import type { ContentRecItem }         from '@/components/blocks/ContentRecommen
 import ProductRecommendationsBlock     from '@/components/blocks/ProductRecommendationsBlock'
 import type { ProductRec }             from '@/components/blocks/ProductRecommendationsBlock'
 import OT_ComparisonTableBlock         from '@/cms/components/OT_ComparisonTableBlock'
-import OptiFormsContainerDataAdapter   from '@/cms/components/OptiFormsContainerData'
 import {
   ArrowRight, Zap, ChevronRight, Play, Download,
   Sparkles, Send, Rocket, Star, Plus,
@@ -62,6 +61,13 @@ import TrustRailPlayground    from '../trust-rail-playground'
 import TokenManagerPlayground from '../token-manager-playground'
 import CarouselPlayground     from '../carousel-playground'
 import SliderPlayground       from '../slider-playground'
+import ProductListingBlock    from '@/components/blocks/ProductListingBlock'
+import CommerceFlowBlock      from '@/components/blocks/CommerceFlowBlock'
+import CatalogRecommendations from '@/components/blocks/CatalogRecommendations'
+import CommerceProvider       from '@/components/commerce/CommerceProvider'
+import { fixtureBag, fixtureCards, fixtureSubCategories } from '@/lib/commerce/fixtures'
+import OT_IndustryNewsFeedBlock  from '@/cms/components/OT_IndustryNewsFeedBlock'
+import { enabledFeeds }          from '@/lib/feeds/registry'
 
 // ─── Static params ──────────────────────────────────────────────────────────
 
@@ -70,13 +76,13 @@ const BLOCK_SLUGS = [
   'image', 'video', 'stat', 'stat-item', 'feature-grid', 'feature-item', 'trust-rail',
   'accordion', 'tabs', 'tab-item', 'blog-feed', 'button', 'chart', 'banner', 'resource-library',
   'callout', 'divider', 'event-listing', 'practitioner-listing', 'location-listing',
-  'content-recommendations', 'product-recommendations',
+  'content-recommendations', 'product-recommendations', 'product-listing', 'commerce-flow',
   'comparison-table',
   'disclosure',
   'token-manager',
   'carousel',
   'slider',
-  'forms',
+  'industry-news-feed',
 ] as const
 
 type BlockSlug = typeof BLOCK_SLUGS[number]
@@ -108,13 +114,15 @@ const BLOCK_META: Record<BlockSlug, { label: string; cmsKey: string; description
   'practitioner-listing': { label: 'PractitionerListingBlock', cmsKey: 'OT_PractitionerListingBlock', description: 'CMS-driven, vertical-agnostic people directory pulled from Practitioner Profiles. Grid (cards) or list (rows) layout, client-side search across name / credentials / specialty, and three multi-select filters — specialty, location, and language — derived dynamically from the loaded set, never a fixed list. Values OR within a filter and AND across filters. Automatically scoped to the current site via the Site Key field on each profile. Squared portraits with a chromatic brand bloom and a designed initials fallback. In production, practitioners are fetched at render time; the showcase uses static fixtures spanning medical, legal, and technology verticals.' },
   'location-listing': { label: 'LocationListingBlock', cmsKey: 'OT_LocationListingBlock', description: 'CMS-driven, vertical-agnostic location directory pulled from Location Profiles. Three toggleable views: a Mapbox dark map paired with a synchronized scrollable location rail (click a marker or rail card to fly + open its popup), an image-plate card grid, and a compact list. Client-side search across name / label / address, and a single-select label filter derived dynamically from the loaded set — never a fixed list, "All" always first. Automatically scoped to the current site via the Site Key field on each profile. Custom brand-beacon markers and fully-restyled dark-glass popups. In production, addresses are geocoded via the Mapbox API at render time (24h ISR cache); the showcase uses static fixtures with pre-resolved coordinates, so it makes no API calls.' },
   'content-recommendations': { label: 'ContentRecommendationsBlock', cmsKey: 'OT_ContentRecommendationsBlock', description: 'Personalized content grid from Optimizely Content Recommendations (Idio). The ia.js tracker builds a per-visitor profile and the block fetches recommendations server-side at render time using the delivery key configured on the ThemeManager. Three color schemes. In production, items are personalized per visitor; the showcase uses static sample articles to demonstrate the layout.' },
-  'product-recommendations': { label: 'ProductRecommendationsBlock', cmsKey: 'OT_ProductRecommendationsBlock', description: 'Live product recommendations from Optimizely Product Recommendations (Peerius). The engine returns recommendations client-side (via the peerius:recs event) for the configured widget position; the widget renders a card grid with a "Show all" expand. When the engine returns nothing it shows an empty state. In production, recs are live and personalized; the showcase uses static sample products.' },
+  'product-recommendations': { label: 'ProductRecommendationsBlock', cmsKey: 'OT_ProductRecommendationsBlock', description: 'Product recommendations from two sources. Peerius (default): live, personalized recommendations from Optimizely Product Recommendations, returned client-side via the peerius:recs event and rendered as a card grid with a "Show all" expand. Catalog: merchandising strategies over the Optimizely Graph product catalog — trending, from a category, hand-picked, complete the look (on product pages), recently viewed and pairs-with-your-bag (next best product) — rendered as a product-card shelf that scrolls on mobile. Session strategies hide the whole shelf when the shopper has no history yet. The showcase uses static sample products.' },
+  'product-listing': { label: 'ProductListingBlock', cmsKey: 'OT_ProductListingBlock', description: 'The storefront product listing (PLP) over the Optimizely Graph product catalog. Scope by category, collection or badge; facets — category, size (in-stock only), colour, material, fit, price band and traits — are derived from the loaded products, OR within a facet and AND across facets, and live in the URL so category links deep-link into a filtered view. Five sorts, progressive Show more, and an optional brand-filled editorial tile slotted into the grid (hidden while filtering). Cards crossfade to a second image on hover and carry a wishlist toggle. The showcase uses the catalog JSON as fixtures.' },
+  'commerce-flow': { label: 'CommerceFlowBlock', cmsKey: 'OT_CommerceFlowBlock', description: 'The mock storefront\'s transactional surfaces behind one block with a mode: bag (editable lines, free-delivery meter, order summary), checkout (details → delivery → payment, inline validation, test card only), order confirmation (read back from the browser) and wishlist. No commerce backend: state lives in the shopper\'s browser, and only the last four digits of the published test card are kept. The summary panel can be surface, brand or ruled. The showcase seeds a sample bag in a sandboxed store.' },
   'comparison-table': { label: 'ComparisonTableBlock', cmsKey: 'OT_ComparisonTableBlock', description: 'Side-by-side comparison of plans, tiers, or account types. Grouped rows divide the table into named sections. Cells support a Lucide icon, short text, or both — an empty cell renders a dash. One column can be marked as featured to receive the brand-color treatment and a badge. On mobile a column-selector tab bar replaces the full grid, with swipe gesture support.' },
   'disclosure':       { label: 'DisclosureBlock',      cmsKey: 'OT_DisclosureBlock',      description: 'Legal and regulatory disclosures, rate notices, and footnotes. Items are auto-numbered (¹ ² ³ or a b c) — single-item blocks suppress the marker. Two styles: Fine Print (ultra-subtle footnote treatment) and Section (slightly elevated zone). Heading and marker style are content-type properties; no display template settings to configure.' },
   'token-manager':    { label: 'TokenManager',          cmsKey: 'OT_TokenManager',          description: 'Global text-token system. Authors define key–value pairs (e.g. product-name → Advantage Checking); any CMS field that contains {{product-name}} receives the value at render time — in the CMS preview and on published pages. Token keys are language-neutral; values can be translated per locale. Singleton shared block, like ThemeManager.' },
   'carousel':         { label: 'CarouselBlock',         cmsKey: 'OT_CarouselBlock',         description: 'Editorial slideshow with 2–8 slides. Full-bleed mode uses the image as a full-width background with a gradient overlay; split mode places the image on the left with a content panel on the right. Four transition styles (slide, cover, fade, morph), autoplay with three speeds, loop or bounce mode, peek control to reveal adjacent slides, and a dot + arrow nav bar.' },
   'slider':           { label: 'SliderBlock',           cmsKey: 'OT_SliderBlock',           description: 'Section-level slideshow with 2–8 slides. A Presentation Style (Cinematic, Editorial Split, Story Rail, Emerge) sets the composition and slide-to-slide transition — all four are fully implemented, though not every setting applies to every style, by design rather than by omission: Content Placement and Content Vertical Alignment are honored by Cinematic, Editorial Split, and Emerge but ignored by Story Rail, whose content position is fixed; Editorial Split’s Overlay tints only its media panel, never the text panel; Story Rail collapses Navigation’s Arrows/Dots/Both into a single gutter-control outcome, since it has no separate dot row; and Emerge replaces arrows/dots entirely with a bottom nav dock — clickable per-slide cards plus a chevron pair — whose reveal transition uncovers each incoming slide from the bottom edge up, identically regardless of direction. Full keyboard/ARIA carousel semantics, a mandatory pause control whenever Auto-Play is on, and a reduced-motion collapse for every transition.' },
-  'forms':            { label: 'OptiFormsContainerData', cmsKey: 'OptiFormsContainerData',  description: "Built-in Optimizely Forms. Authored entirely in the CMS's Forms editor — text/number/range/choice/selection/textarea/url fields, a submit action, and optional show/hide dependency rules — then dropped onto a page as a section. This demo renders a real form authored in the connected CMS instance, not static mock data." },
+  'industry-news-feed': { label: 'IndustryNewsFeed', cmsKey: 'OT_IndustryNewsFeedBlock', description: 'Latest headlines from a pre-approved external industry feed (Healthcare, Banking, Retail, Hospitality, Insurance, Legal, Technology). The editor picks an industry; the server resolves it to a registry-held feed URL, fetches with a guarded fetch, and normalizes to headline, short summary, thumbnail and date. Every story links out to the publisher in a new tab with source attribution. Layout, item count, and image/date/summary/source toggles are content properties. Live data — the showcase fetches the real feeds.' },
 }
 
 export function generateStaticParams() {
@@ -142,15 +150,6 @@ function BlockHeader({ slug }: { slug: BlockSlug }) {
     <div className="px-md pt-xl pb-lg lg:px-lg">
       <SectionLabel index={`Blocks · ${meta.cmsKey}`} title={meta.label} />
       <p className="text-body leading-body text-fg-muted max-w-[100ch]">{meta.description}</p>
-    </div>
-  )
-}
-
-function VariantGroup({ label, note }: { label: string; note?: string }) {
-  return (
-    <div className="px-md pb-md lg:px-lg border-t border-fg/10 pt-lg">
-      <p className="text-label tracking-label uppercase text-fg-muted font-semibold">{label}</p>
-      {note && <p className="text-label text-fg-muted/60 mt-xs">{note}</p>}
     </div>
   )
 }
@@ -2728,6 +2727,82 @@ const SAMPLE_PRODUCT_RECS: ProductRec[] = [
   { id: 4, title: 'OptiTech Data Pipeline', url: '#', img: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&q=80&fit=crop', description: 'Streaming ETL with schema enforcement and one-click connectors.', price: 'From $299/mo' },
 ]
 
+function ProductListingShowcase() {
+  return (
+    <>
+      <BlockHeader slug="product-listing" />
+      <div className="px-md pb-sm lg:px-lg pt-md">
+        <p className="text-label text-fg-muted/60 leading-body max-w-[65ch]">
+          In production, products come from the Optimizely Graph product catalog for the site&rsquo;s catalog ID, scoped by the block&rsquo;s category, collection and badge fields. The showcase reads the same catalog JSON directly. Filter by size or colour and watch the URL update; add a sort and use the back button.
+        </p>
+      </div>
+
+      <VariantGroup label="Women · 4 columns · portrait · facets + editorial tile" note="The full category page experience. Facet options come from the loaded products; the brand tile sits after the fifth product and steps aside once a filter is active." />
+      <div className="border-t border-fg/5">
+        <ProductListingBlock
+          heading="Women"
+          subtext="The season's collection and the pieces it was built around."
+          products={fixtureCards((p) => p.gender === 'women')}
+          subCategories={fixtureSubCategories('women')}
+          currency="USD"
+          pageSize={8}
+          tile={{ eyebrow: 'The knit guide', heading: 'Lambswool, merino or cashmere?', body: 'How each yarn wears, warms and ages — and which one to reach for first.', ctaLabel: 'Read the guide', ctaUrl: '/showcase/blocks/rich-text' }}
+          styleOptions={{ color: 'canvas', columns: 4, cardAspect: 'portrait', showFacets: true, tilePosition: 3 }}
+        />
+      </div>
+
+      <VariantGroup label="Archive · 3 columns · square · surface · no facets" note="A compact curated grid: revised prices show the original as a quiet strikethrough — no red, no percentage off." />
+      <div className="border-t border-fg/5">
+        <ProductListingBlock
+          heading="Archive"
+          subtext="Earlier seasons, fewer sizes, revised prices. We don’t remake past collections."
+          products={fixtureCards((p) => p.collections.includes('archive'))}
+          subCategories={[]}
+          currency="USD"
+          styleOptions={{ color: 'surface', columns: 3, cardAspect: 'square', showFacets: false, tilePosition: 3 }}
+        />
+      </div>
+      <div className="pb-xl" />
+    </>
+  )
+}
+
+function CommerceFlowShowcase() {
+  const bag = fixtureBag()
+  return (
+    <>
+      <BlockHeader slug="commerce-flow" />
+      <div className="px-md pb-sm lg:px-lg pt-md">
+        <p className="text-label text-fg-muted/60 leading-body max-w-[65ch]">
+          Each demo below runs in a sandboxed store seeded with a two-piece bag, so it never touches a real storefront bag. Change quantities, walk the checkout (card 4242 4242 4242 4242, any future expiry, any CVC) and the confirmation reads the order back from the browser.
+        </p>
+      </div>
+
+      <VariantGroup label="mode: bag · surface summary" />
+      <div className="border-t border-fg/5">
+        <CommerceProvider catalogId="showcase-bag" currency="USD" locale="en" seed={{ bag }}>
+          <CommerceFlowBlock mode="bag" assurance="Free returns within 30 days. Free repairs for life for members." summaryStyle="surface" />
+        </CommerceProvider>
+      </div>
+
+      <VariantGroup label="mode: checkout · brand summary" note="Three steps with inline validation. Payment accepts only the published test card." />
+      <div className="border-t border-fg/5">
+        <CommerceProvider catalogId="showcase-checkout" currency="USD" locale="en" seed={{ bag }}>
+          <CommerceFlowBlock mode="checkout" summaryStyle="brand" continueUrl="/showcase/blocks/commerce-flow" />
+        </CommerceProvider>
+      </div>
+
+      <VariantGroup label="mode: wishlist · empty state" />
+      <div className="border-t border-fg/5">
+        <CommerceProvider catalogId="showcase-wishlist" currency="USD" locale="en">
+          <CommerceFlowBlock mode="wishlist" emptyMessage="Nothing saved yet" continueUrl="/showcase/blocks/product-listing" />
+        </CommerceProvider>
+      </div>
+      <div className="pb-xl" />
+    </>
+  )
+}
+
 function ProductRecommendationsShowcase() {
   return (
     <>
@@ -2757,6 +2832,17 @@ function ProductRecommendationsShowcase() {
       <VariantGroup label="Show-all expand · initialCount 3 of 4" note="When the engine returns more than the initial count, a Show-all control reveals the rest." />
       <div className="border-t border-fg/5">
         <ProductRecommendationsBlock initialCount={3} showAllLabel="Show all 4" color="canvas" initialRecs={SAMPLE_PRODUCT_RECS} />
+      </div>
+
+      <VariantGroup label="source: catalog · strategy: completeTheLook · surface" note="Catalog source over the Graph product catalog. On a product page, Complete the look reads the current product and shows its curated pairings first, then same-category pieces. The shelf scrolls horizontally on mobile." />
+      <div className="border-t border-fg/5">
+        <CatalogRecommendations
+          heading="Complete the look"
+          subheading="Pieces cut to wear with the Loden Wool Car Coat."
+          color="surface"
+          count={4}
+          initial={fixtureCards((p) => ['cashmere-boxy-cardigan', 'wide-leg-wool-trouser', 'oversized-lambswool-scarf', 'suede-chelsea-boot'].includes(p.handle))}
+        />
       </div>
       <div className="pb-xl" />
     </>
@@ -2878,22 +2964,44 @@ function ComparisonTableShowcase() {
   )
 }
 
-// Real content authored in the connected CMS instance — not mock data, so
-// this demo actually proves the OptiForms adapter fetch/render/submit path
-// works end to end against a genuine Optimizely Forms container.
-const FORMS_DEMO_CONTENT_KEY = 'c8f200bda122468993b91aea1a19235f'
+// Forms has its own literal route at blocks/forms/page.tsx (which Next.js
+// routes to in preference to this dynamic [block] segment) — it needs
+// searchParams for the "render by content key" lookup, which would force
+// every other showcase block page in this file to opt out of static
+// rendering if read here instead.
 
-function FormsShowcase() {
+function IndustryNewsFeedShowcase() {
+  const feeds = enabledFeeds()
   return (
     <>
-      <BlockHeader slug="forms" />
-      <VariantGroup
-        label="Live form · Form UI Testing"
-        note="Fetched by content key from the connected CMS instance, exactly as it renders when placed on a real page."
-      />
-      <div className="px-md pb-xl lg:px-lg">
-        <OptiFormsContainerDataAdapter content={{ _metadata: { key: FORMS_DEMO_CONTENT_KEY } }} />
-      </div>
+      <BlockHeader slug="industry-news-feed" />
+      <VariantGroup label="Industries" />
+      {feeds.map(f => (
+        <div key={f.id} className="border-t border-fg/5">
+          <VariantLabel label={f.label} note={f.sourceName} />
+          <OT_IndustryNewsFeedBlock
+            content={{ industry: f.id, itemCount: 3, heading: `Latest ${f.label.toLowerCase()} news` } as any}
+            displaySettings={{ color: 'canvas' }}
+          />
+        </div>
+      ))}
+      <VariantGroup label="Toggles" />
+      {[
+        { label: 'No images',               content: { showImage: false } },
+        { label: 'Headlines only',          content: { showImage: false, showSummary: false, showDate: false } },
+        { label: 'No source attribution',   content: { showSource: false } },
+        { label: 'Surface background',      content: {}, displaySettings: { color: 'surface' } },
+        { label: 'Industry not set (live site renders nothing)', content: { industry: undefined } },
+      ].map(item => (
+        <div key={item.label} className="border-t border-fg/5">
+          <VariantLabel label={item.label} />
+          <OT_IndustryNewsFeedBlock
+            content={{ industry: 'healthcare', itemCount: 3, heading: 'Latest healthcare news', ...item.content } as any}
+            displaySettings={(item as { displaySettings?: DS }).displaySettings ?? {}}
+          />
+        </div>
+      ))}
+      <div className="pb-xl" />
     </>
   )
 }
@@ -2918,6 +3026,7 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'tabs':         return <><BlockHeader slug="tabs" /><TabsPlayground /></>
     case 'tab-item':     return <><BlockHeader slug="tab-item" /><TabItemPlayground /></>
     case 'blog-feed':    return <BlogFeedShowcase />
+    case 'industry-news-feed': return <IndustryNewsFeedShowcase />
     case 'button':       return <><BlockHeader slug="button" /><ButtonPlayground /></>
     case 'chart':        return <ChartShowcase />
     case 'banner':            return <><BlockHeader slug="banner" /><BannerPlayground /></>
@@ -2929,12 +3038,13 @@ export default async function ShowcaseBlockPage({ params }: Props) {
     case 'location-listing':     return <LocationListingShowcase />
     case 'content-recommendations': return <ContentRecommendationsShowcase />
     case 'product-recommendations': return <ProductRecommendationsShowcase />
+    case 'product-listing': return <ProductListingShowcase />
+    case 'commerce-flow': return <CommerceFlowShowcase />
     case 'comparison-table':        return <ComparisonTableShowcase />
     case 'disclosure':              return <><BlockHeader slug="disclosure" /><DisclosurePlayground /></>
     case 'token-manager':           return <><BlockHeader slug="token-manager" /><TokenManagerPlayground /></>
     case 'carousel':                return <><BlockHeader slug="carousel" /><CarouselPlayground /></>
     case 'slider':                  return <><BlockHeader slug="slider" /><SliderPlayground /></>
-    case 'forms':                   return <FormsShowcase />
     default:                 return notFound()
   }
 }

@@ -211,6 +211,25 @@ html {
   100% { transform: scale(1); }
 }
 
+/* FilterBar — the chip that becomes active (selecting a filter, or clearing
+   one back to "All") catches and settles rather than snapping. Overshoots
+   past 1 before resting, so it reads as a tactile click, not a glitch. */
+@keyframes chipSelect {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.93); }
+  70%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-chip-select {
+    animation: chipSelect var(--ot-dur-base) var(--ot-ease-quick) both;
+  }
+  .animate-filter-swap {
+    animation: fadeIn var(--ot-dur-base) var(--ot-ease-quick) both;
+  }
+}
+
 /* MultiSelect popover entrance — opacity + short rise, transform-only so no
    layout shift. Gated at the utility via motion-safe:. */
 @keyframes multiselect-in {
@@ -1538,17 +1557,16 @@ body {
 /* NEON — clean single-tube neon sign. Reference: a bent-glass tube with a white-
    hot core and a single-color bloom (deliberately NOT cold cyberpunk/Web3 neon —
    the glow hue is the theme's OWN accent, re-skinning per vertical, on the tinted
-   canvas, never #000). The look comes from the FONT: Tilt Neon (--ot-font-neon) is
-   a monoline display face that reads as one continuous tube. Dark: white tube +
+   canvas, never #000). The look comes from the FONT: Orbitron (--ot-font-neon) is
+   a wide, mechanical display face that stays legible under heavy glow. Dark: white tube +
    accent glow. Light: brand tube + accent glow (a lit tube can't read on white).
-   No flicker. Best on short statement headlines. font-synthesis-weight:none stops
-   the browser faux-bolding Tilt Neon's 400-only face (a heading may request 800),
-   which would thicken the clean monoline. */
+   No flicker. Best on short statement headlines. Weight is pinned to 700
+   (font-synthesis-weight:none) so a heading's own weight never thickens the tube. */
 .ot-fx-neon {
   font-family: var(--ot-font-neon);
-  font-weight: 400;
+  font-weight: 700;
   font-synthesis-weight: none;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.03em;
   line-height: 1.15;
   color: var(--ot-fg);                                          /* white-hot tube   */
   text-shadow:
@@ -2508,6 +2526,70 @@ body {
   .feature-card-lift:hover { transform: none; }
 }
 
+/* ── Feature grid — ruled layout divider system ───────────────────────────────
+ * The "ruled" layout's row dividers borrow the brand→accent horizon-hairline
+ * motif already used by the split-bar header and mega-menu (see the
+ * ::after comment above .split-shell) rather than a flat neutral line, so the
+ * effect reads as one system instead of a plain table rule. A matching
+ * vertical hairline bisects the two text columns at the md+ breakpoint (where
+ * the ruled grid itself goes two-column), so the layout reads as a ruled
+ * ledger grid instead of two blocks of text floating in open space.
+ *
+ * On a brand-filled section the gradient would vanish into the same-hued
+ * background, so [data-color="brand"] falls back to a neutral fg-on-brand
+ * line instead — same fallback logic DESIGN.md documents for chromatic vs.
+ * neutral shadows.
+ * ─────────────────────────────────────────────────────────────────────────── */
+[data-ruled-row] {
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(to right, transparent, var(--ot-brand) 15%, var(--ot-accent) 85%, transparent) 1;
+  transition: background-color var(--ot-dur-quick) var(--ot-ease-quick);
+}
+[data-ruled-row][data-color="brand"] {
+  border-image: none;
+  border-top-color: oklch(from var(--ot-fg-on-brand) l c h / 0.2);
+}
+
+/* Zebra banding — faint at rest, just enough to read as ledger rows without
+ * competing with the hairlines. Hover deepens the same tint one step further,
+ * so every row (banded or not) signals it's the one under the pointer. */
+[data-ruled-row][data-zebra] {
+  background-color: oklch(from var(--ot-fg) l c h / 0.03);
+}
+[data-ruled-row][data-zebra][data-color="brand"] {
+  background-color: oklch(from var(--ot-fg-on-brand) l c h / 0.05);
+}
+[data-ruled-row]:hover {
+  background-color: oklch(from var(--ot-fg) l c h / 0.06);
+}
+[data-ruled-row][data-color="brand"]:hover {
+  background-color: oklch(from var(--ot-fg-on-brand) l c h / 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ruled-row] { transition: none; }
+}
+
+[data-ruled-grid] {
+  position: relative;
+}
+@media (min-width: 768px) {
+  [data-ruled-grid]::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 50%;
+    width: 1px;
+    /* Otherwise this 1px overlay sits directly on the row's own horizontal
+     * midpoint and silently eats the pointer, so hovering a row exactly on
+     * the line never triggers [data-ruled-row]'s own :hover. */
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--ot-brand) 15%, var(--ot-accent) 85%, transparent);
+  }
+  [data-ruled-grid][data-color="brand"]::after {
+    background: oklch(from var(--ot-fg-on-brand) l c h / 0.15);
+  }
+}
+
 /* ── Rich Text Block — treatment containers ────────────────────────────────────
  * These classes reference bloom tokens so they follow CMS theme overrides
  * automatically. All shadow/border/background values are token-derived.
@@ -3065,6 +3147,24 @@ body {
     0 6px 20px oklch(from var(--ot-canvas) l c h / 0.35);
 }
 
+/* Brand-filled card only (data-theme="dark"): a hairline top-edge highlight so
+ * the panel reads as lit glass rather than flat fill. Neutral white at low
+ * alpha works over any brand hue in both light and dark page modes. */
+.hero-spotlight-card[data-theme="dark"] {
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 0.16),
+    0 0 0 1px var(--ot-bloom-brand-border),
+    0 18px 50px var(--ot-bloom-brand-faint),
+    0 6px 20px oklch(from var(--ot-canvas) l c h / 0.35);
+}
+
+/* Secondary CTA inside the card: the shared /40 outline is weak on the brand
+ * fill. Scoped here so other hero directions are untouched; :not(:hover) keeps
+ * the utility hover state winning. currentColor follows light/dark text. */
+.hero-spotlight-card a.border:not(:hover) {
+  border-color: oklch(from currentColor l c h / 0.65);
+}
+
 /* The photo itself: a crisp chromatic bloom shadow, no rotation. */
 .hero-spotlight-frame {
   box-shadow:
@@ -3077,8 +3177,10 @@ body {
  * translate in JSX, not a rotation) so its edge peeks out on two sides — a
  * layered-plate cue distinct from Overlap's corner-pinned card. */
 .hero-spotlight-frame-offset {
-  background: var(--ot-surface);
-  border: 1px solid var(--ot-bloom-brand-border);
+  background:
+    linear-gradient(var(--ot-bloom-brand-faint), var(--ot-bloom-brand-faint)),
+    var(--ot-surface);
+  border: 1px solid var(--ot-bloom-brand-ring);
 }
 
 /* Editorial Overlap — the headline plate carries the card chromatic depth so it
@@ -3344,6 +3446,13 @@ body {
 .bg-accent-ground   { background-color: var(--ot-accent); }
 [data-theme="light"] .text-accent-ground { color: oklch(from var(--ot-accent) calc(l - 0.40) c h); }
 [data-theme="light"] .bg-accent-ground   { background-color: oklch(from var(--ot-accent) calc(l - 0.40) c h); }
+
+/* Brand-as-text. --ot-brand-text is emitted by buildThemeCSS ONLY for themes
+ * whose brand is deep enough to fail AA as text on dark grounds (it lifts the
+ * lightness in dark mode, resets to the brand in light mode). Every other theme
+ * falls back to --ot-brand — byte-for-byte the same colour as Tailwind's
+ * text-brand utility, so they render unchanged. */
+.text-brand { color: var(--ot-brand-text, var(--ot-brand)); }
 
 /* ── Blog: Atmospheric — gradient overlay for image/video background header ──
  * Heavy darkening gradient ensures the glass panel text is legible regardless
@@ -4153,4 +4262,15 @@ body {
   .oa-day-panel {
     animation: oa-slide-from-right 240ms cubic-bezier(0.16, 1, 0.3, 1) both; /* dur-exempt: 240ms — nearest quick(200) Δ40ms */
   }
+}
+
+/* ── Commerce: mini-bag drawer ────────────────────────────────────────────────
+ * Radix Dialog panel sliding in from the right edge. transform + opacity only;
+ * reduced-motion users get the panel in place with no slide.
+ * ─────────────────────────────────────────────────────────────────────────── */
+@keyframes minibagIn  { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes minibagOut { from { transform: translateX(0); } to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: no-preference) {
+  .minibag-panel[data-state="open"]   { animation: minibagIn  var(--ot-dur-base) var(--ot-ease-kinetic) both; }
+  .minibag-panel[data-state="closed"] { animation: minibagOut var(--ot-dur-quick) var(--ot-ease-quick) both; }
 }

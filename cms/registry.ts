@@ -36,11 +36,14 @@ import { OT_PractitionerListingDefault } from '@/cms/display-templates/OT_Practi
 import { OT_LocationListingDefault } from '@/cms/display-templates/OT_LocationListingDefault'
 import { OT_ContentRecommendationsDefault } from '@/cms/display-templates/OT_ContentRecommendationsDefault'
 import { OT_ProductRecommendationsDefault } from '@/cms/display-templates/OT_ProductRecommendationsDefault'
+import { OT_ProductListingDefault } from '@/cms/display-templates/OT_ProductListingDefault'
+import { OT_CommerceFlowDefault } from '@/cms/display-templates/OT_CommerceFlowDefault'
 import { OT_ComparisonTableDefault }        from '@/cms/display-templates/OT_ComparisonTableDefault'
 import { OT_DisclosureBlockDefault }       from '@/cms/display-templates/OT_DisclosureBlockDefault'
 import { OT_TopicHubDefault }             from '@/cms/display-templates/OT_TopicHubDefault'
 import { OT_CarouselDefault }            from '@/cms/display-templates/OT_CarouselDefault'
 import { OT_SliderDefault }               from '@/cms/display-templates/OT_SliderDefault'
+import { OT_IndustryNewsFeedDefault }    from '@/cms/display-templates/OT_IndustryNewsFeedDefault'
 
 // Content type definitions — required at runtime so the SDK's query builder
 // can generate the correct GraphQL fragments for each type
@@ -90,11 +93,15 @@ import { OT_EventListingBlock }     from '@/cms/content-types/OT_EventListingBlo
 import { OT_PracticeArea }            from '@/cms/content-types/OT_PracticeArea'
 import { OT_PractitionerProfile }     from '@/cms/content-types/OT_PractitionerProfile'
 import { OT_PractitionerPage }        from '@/cms/content-types/OT_PractitionerPage'
+import { OT_CampaignLandingPage }      from '@/cms/content-types/OT_CampaignLandingPage'
+import { OT_ProductDetailTemplate }   from '@/cms/content-types/OT_ProductDetailTemplate'
 import { OT_PractitionerListingBlock } from '@/cms/content-types/OT_PractitionerListingBlock'
 import { OT_LocationProfile }            from '@/cms/content-types/OT_LocationProfile'
 import { OT_LocationListingBlock }       from '@/cms/content-types/OT_LocationListingBlock'
 import { OT_ContentRecommendationsBlock } from '@/cms/content-types/OT_ContentRecommendationsBlock'
 import { OT_ProductRecommendationsBlock } from '@/cms/content-types/OT_ProductRecommendationsBlock'
+import { OT_ProductListingBlock } from '@/cms/content-types/OT_ProductListingBlock'
+import { OT_CommerceFlowBlock } from '@/cms/content-types/OT_CommerceFlowBlock'
 import { OT_ComparisonCell }        from '@/cms/content-types/OT_ComparisonCell'
 import { OT_ComparisonRow }         from '@/cms/content-types/OT_ComparisonRow'
 import { OT_ComparisonColumn }      from '@/cms/content-types/OT_ComparisonColumn'
@@ -110,6 +117,7 @@ import { OT_CarouselSlide }          from '@/cms/content-types/OT_CarouselSlide'
 import { OT_CarouselBlock }          from '@/cms/content-types/OT_CarouselBlock'
 import { OT_SlideItem }              from '@/cms/content-types/OT_SlideItem'
 import { OT_SliderBlock }            from '@/cms/content-types/OT_SliderBlock'
+import { OT_IndustryNewsFeedBlock }  from '@/cms/content-types/OT_IndustryNewsFeedBlock'
 
 // OptiForm content types — built-in Forms for Visual Builder element schemas
 import { OptiFormsContainerData }   from '@/cms/content-types/OptiFormsContainerData'
@@ -165,12 +173,15 @@ import OT_LocationListingBlockAdapter        from '@/cms/components/OT_LocationL
 import OT_LocationProfileAdapter             from '@/cms/components/OT_LocationProfile'
 import OT_ContentRecommendationsBlockAdapter from '@/cms/components/OT_ContentRecommendationsBlock'
 import OT_ProductRecommendationsBlockAdapter from '@/cms/components/OT_ProductRecommendationsBlock'
+import OT_ProductListingBlockAdapter from '@/cms/components/OT_ProductListingBlock'
+import OT_CommerceFlowBlockAdapter from '@/cms/components/OT_CommerceFlowBlock'
 import OT_ComparisonTableBlockAdapter        from '@/cms/components/OT_ComparisonTableBlock'
 import OT_DisclosureBlockAdapter            from '@/cms/components/OT_DisclosureBlock'
 import OT_TokenManagerAdapter               from '@/cms/components/OT_TokenManager'
 import OT_TopicHubPageAdapter              from '@/cms/components/OT_TopicHubPage'
 import OT_CarouselBlockAdapter             from '@/cms/components/OT_CarouselBlock'
 import OT_SliderBlockAdapter               from '@/cms/components/OT_SliderBlock'
+import OT_IndustryNewsFeedBlockAdapter     from '@/cms/components/OT_IndustryNewsFeedBlock'
 
 // OptiForm component adapters
 import OptiFormsContainerDataAdapter   from '@/cms/components/OptiFormsContainerData'
@@ -226,11 +237,14 @@ initDisplayTemplateRegistry([
   OT_LocationListingDefault,
   OT_ContentRecommendationsDefault,
   OT_ProductRecommendationsDefault,
+  OT_ProductListingDefault,
+  OT_CommerceFlowDefault,
   OT_ComparisonTableDefault,
   OT_DisclosureBlockDefault,
   OT_TopicHubDefault,
   OT_CarouselDefault,
   OT_SliderDefault,
+  OT_IndustryNewsFeedDefault,
 ])
 
 initContentTypeRegistry([
@@ -280,11 +294,15 @@ initContentTypeRegistry([
   OT_PracticeArea,
   OT_PractitionerProfile,
   OT_PractitionerPage,
+  OT_CampaignLandingPage,
+  OT_ProductDetailTemplate,
   OT_PractitionerListingBlock,
   OT_LocationProfile,
   OT_LocationListingBlock,
   OT_ContentRecommendationsBlock,
   OT_ProductRecommendationsBlock,
+  OT_ProductListingBlock,
+  OT_CommerceFlowBlock,
   OT_ComparisonCell,
   OT_ComparisonRow,
   OT_ComparisonColumn,
@@ -300,6 +318,7 @@ initContentTypeRegistry([
   OT_CarouselBlock,
   OT_SlideItem,
   OT_SliderBlock,
+  OT_IndustryNewsFeedBlock,
   // OptiForm types
   OptiFormsContainerData,
   OptiFormsDependencyRule,
@@ -360,12 +379,15 @@ initReactComponentRegistry({
     OT_LocationListingBlock:     OT_LocationListingBlockAdapter,
     OT_ContentRecommendationsBlock: OT_ContentRecommendationsBlockAdapter,
     OT_ProductRecommendationsBlock: OT_ProductRecommendationsBlockAdapter,
+    OT_ProductListingBlock: OT_ProductListingBlockAdapter,
+    OT_CommerceFlowBlock: OT_CommerceFlowBlockAdapter,
     OT_ComparisonTableBlock:        OT_ComparisonTableBlockAdapter,
     OT_DisclosureBlock:             OT_DisclosureBlockAdapter,
     OT_TokenManager:                OT_TokenManagerAdapter,
     OT_TopicHubPage:                OT_TopicHubPageAdapter,
     OT_CarouselBlock:               OT_CarouselBlockAdapter,
     OT_SliderBlock:                 OT_SliderBlockAdapter,
+    OT_IndustryNewsFeedBlock:       OT_IndustryNewsFeedBlockAdapter,
     // Preview-only: lets /preview render the shared profile record (not used in compositions)
     OT_PractitionerProfile:      OT_PractitionerProfileAdapter,
     OT_LocationProfile:          OT_LocationProfileAdapter,

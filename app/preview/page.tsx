@@ -10,6 +10,8 @@ import { resolveNavbarStyle } from '@/lib/theme-axes'
 import { CompositionRenderer } from '@/lib/CompositionRenderer'
 import { getPractitioner } from '@/lib/practitioners'
 import PractitionerHeader from '@/components/practitioner/PractitionerHeader'
+import CampaignLandingFrame from '@/components/campaign/CampaignLandingFrame'
+import type { Locale } from '@/lib/i18n/config'
 import BookingPanel from '@/components/practitioner/booking/BookingPanel'
 import Header from '@/components/layout/Header'
 import SplitHeader from '@/components/layout/SplitHeader'
@@ -18,22 +20,14 @@ import Script from 'next/script'
 import { redirect } from 'next/navigation'
 import { ExternalPreviewLinkPanel } from '@/components/preview/ExternalPreviewLinkPanel'
 import OnPageEditBridge from '@/app/(draft)/OnPageEditBridge'
+import { ReviewCommentsStrip } from '@/components/preview/ReviewCommentsStrip'
+import { buildExternalPreviewUrl, contentPathname, toPathname } from '@/lib/external-preview'
 
 export const dynamic  = 'force-dynamic'
 export const revalidate = 0
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}
-
-// Resolves an absolute or relative URL to just the pathname.
-function toPathname(raw: string | null | undefined): string | null {
-  if (!raw) return null
-  try {
-    return raw.startsWith('http') ? new URL(raw).pathname : raw
-  } catch {
-    return raw.startsWith('/') ? raw : null
-  }
 }
 
 async function PreviewPage({ searchParams }: Props) {
@@ -49,12 +43,20 @@ async function PreviewPage({ searchParams }: Props) {
   // Graph may not have indexed the newly-saved version yet — retry briefly.
   let content: any
   let lastErr: unknown
+  // CMS media (ImageMedia, video, generic files) is locale-neutral: Graph indexes
+  // it with locale "" and the editor sends `loc=` (empty) for it. Stored queries
+  // treat an empty-string variable as unset and drop the locale filter, so those
+  // must go through the unstored query from the first attempt.
+  const localeNeutral = !sp('loc')
   for (let attempt = 0; attempt <= 3; attempt++) {
     try {
       lastErr = undefined
-      content = await getClient().getPreviewContent(
-        params as unknown as PreviewParams,
-      )
+      content = localeNeutral
+        ? await getClient().getPreviewContent(
+            { ...params, loc: '', key: sp('key').replace(/-/g, '') } as unknown as PreviewParams,
+            { stored: false },
+          )
+        : await getClient().getPreviewContent(params as unknown as PreviewParams)
       break
     } catch (err) {
       lastErr = err
@@ -67,6 +69,25 @@ async function PreviewPage({ searchParams }: Props) {
           err.message.includes('No content found for key') ||
           err.message.includes('could not be found')
         )
+      // Locale-neutral content (CMS media: ImageMedia, video, generic files) is
+      // indexed in Graph with locale "" — never "en". The SDK's preview filter
+      // requires `locale eq <loc>`, and the editor always sends loc=en, so these
+      // items "could not be found" however long we wait. Retry once with the
+      // locale-neutral filter before treating it as an indexing lag. Stored
+      // queries are turned off for this call: Graph's stored-query templates
+      // treat an empty-string variable as unset, which would drop the filter.
+      if (notIndexed && attempt === 0 && sp('loc')) {
+        try {
+          content = await getClient().getPreviewContent(
+            { ...params, loc: '', key: sp('key').replace(/-/g, '') } as unknown as PreviewParams,
+            { stored: false },
+          )
+          lastErr = undefined
+          break
+        } catch {
+          // Not locale-neutral content — fall through to the normal retry.
+        }
+      }
       if (notIndexed && attempt < 4) {
         await new Promise(r => setTimeout(r, 350))
         continue
@@ -208,7 +229,17 @@ async function PreviewPage({ searchParams }: Props) {
     )
   }
 
-  const isExperience = Array.isArray(content?.composition?.nodes)
+  // OptiFormsContainerData is a standalone _section, not a page — but it
+  // ALSO exposes composition.nodes (its own step/row/column/field tree), so
+  // the array check below would otherwise misidentify it as a full
+  // experience. Its structure nodes carry only `nodeType` ("step"/"row"/
+  // "column"), never `type` (confirmed live), and CompositionRenderer keys
+  // off `.type` — it silently renders nothing for a node it doesn't
+  // recognize, blanking the entire form. Route it through OptimizelyComponent
+  // instead, which resolves to OptiFormsContainerDataAdapter and already
+  // knows how to walk this exact shape (steps, rules, FormWrapper, …).
+  const isExperience =
+    Array.isArray(content?.composition?.nodes) && content?.__typename !== 'OptiFormsContainerData'
 
   // Practitioner experience pages render a locked profile header OUTSIDE the
   // composition tree — the live slug route does this in its OT_PractitionerPage
@@ -231,38 +262,20 @@ async function PreviewPage({ searchParams }: Props) {
     : content
 
   // ── External Preview Link panel ──────────────────────────────────────────────
-  // Shown in the CMS editor preview when a blog page has enableExternalPreview
-  // set to true. Generates a shareable URL that enables draft mode for an
-  // external reviewer without requiring a CMS login.
-  let externalPreviewUrl: string | null = null
-
-  if (
-    !isExperience &&
-    content?.__typename === 'OT_BlogPage' &&
-    content?.enableExternalPreview === true
-  ) {
-    const previewToken = sp('preview_token')
-    if (previewToken) {
-      const baseUrl = await getRequestBaseUrl()
-      // Prefer the hierarchical (ancestor-resolved) URL; fall back to default
-      const slug = toPathname(
-        content._metadata?.url?.hierarchical ?? content._metadata?.url?.default
-      )
-
-      if (baseUrl && slug) {
-        const qs = new URLSearchParams({
-          preview_token: previewToken,
-          key:           sp('key'),
-          ver:           sp('ver'),
-          loc:           sp('loc'),
-          ctx:           slug,
-          ext_preview:   '1',
-        })
-        externalPreviewUrl = `${baseUrl}/api/draft?${qs}`
-      }
-    }
-  }
-  // ─────────────────────────────────────────────────────────────────────────────
+  // Shown in the CMS editor preview when any page type (experience or _page)
+  // has enableExternalPreview set to true. Generates a shareable URL that
+  // enables draft mode for an external reviewer without requiring a CMS login.
+  // Blog and Campaign pages redirect to the slug route above, which renders
+  // its own panel; this covers the types /preview renders directly.
+  const externalPreviewUrl = buildExternalPreviewUrl({
+    enabled:      content?.enableExternalPreview,
+    baseUrl:      await getRequestBaseUrl(),
+    previewToken: sp('preview_token'),
+    key:          sp('key'),
+    ver:          sp('ver'),
+    loc:          sp('loc'),
+    path:         contentPathname(content),
+  })
 
   // Resolve which header variant the site is configured to use. Sidebar is
   // deliberately excluded — it would overlay the Visual Builder canvas.
@@ -271,6 +284,8 @@ async function PreviewPage({ searchParams }: Props) {
   const previewSettings    = await getSiteSettings(previewDomain, previewLocale)
   const navbarStyle        = resolveNavbarStyle(previewSettings?.navbarStyle)
   const PreviewHeader      = navbarStyle === 'split-bar' ? SplitHeader : Header
+  // Campaign landing pages are standalone: no site header or footer, the frame supplies its own.
+  const isLanding          = isExperience && content?.__typename === 'OT_CampaignLandingPage'
 
   return (
     <>
@@ -291,10 +306,11 @@ async function PreviewPage({ searchParams }: Props) {
           topic={content?.topic ?? undefined}
         />
       )}
+      {externalPreviewUrl && <ReviewCommentsStrip contentKey={sp('key')} />}
 
       {isExperience ? (
         <>
-          <PreviewHeader />
+          {!isLanding && <PreviewHeader />}
           <main className="flex-1">
             {practitioner && (
               <>
@@ -305,9 +321,26 @@ async function PreviewPage({ searchParams }: Props) {
                 {practitioner.bookingEnabled && <BookingPanel practitioner={practitioner} />}
               </>
             )}
-            <CompositionRenderer nodes={content.composition.nodes} />
+            {isLanding ? (
+              <CampaignLandingFrame
+                locale={previewLocale as Locale}
+                look={content.campaignLook}
+                accentOverride={content.accentOverride}
+                motionLevel={content.motionLevel}
+                ctaLabel={content.ctaLabel}
+                ctaUrl={content.ctaUrl?.default ?? content.ctaUrl}
+                returnLabel={content.returnLabel}
+                footerKey={content.footerRef?.key}
+                formKey={content.formRef?.key}
+                formHeading={content.formHeading}
+              >
+                <CompositionRenderer nodes={content.composition.nodes} />
+              </CampaignLandingFrame>
+            ) : (
+              <CompositionRenderer nodes={content.composition.nodes} />
+            )}
           </main>
-          <Footer />
+          {!isLanding && <Footer />}
         </>
       ) : (
         <OptimizelyComponent content={standaloneContent} />

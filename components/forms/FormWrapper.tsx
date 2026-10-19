@@ -46,7 +46,23 @@ export default function FormWrapper({ steps, title, description, submitUrl, conf
     setStatus('submitting')
     try {
       if (submitUrl) {
-        const res = await fetch(submitUrl, { method: 'POST', body: new FormData(e.currentTarget) })
+        // Formspree (and most form backends built for browser-navigation
+        // submits) treats a request with no Accept header as a plain HTML
+        // form post and replies with a redirect to its own hosted "thanks"
+        // page — AFTER already accepting the submission. fetch() follows
+        // that redirect by default, lands on a page that isn't CORS-enabled
+        // for our origin, and the browser refuses to let us read it — so
+        // this threw "Submission failed" on a submission that had, in
+        // fact, already succeeded (confirmed live: both attempts were
+        // captured by Formspree; the first showed the error message, the
+        // second showed neither message at all). Accept: application/json
+        // is the documented way to ask for its real AJAX response — a
+        // same-origin-readable JSON body with no redirect involved.
+        const res = await fetch(submitUrl, {
+          method:  'POST',
+          headers: { Accept: 'application/json' },
+          body:    new FormData(e.currentTarget),
+        })
         if (!res.ok) throw new Error('Submission failed')
       }
       setStatus('submitted')
@@ -57,7 +73,7 @@ export default function FormWrapper({ steps, title, description, submitUrl, conf
 
   if (status === 'submitted') {
     return (
-      <div className="relative w-full bg-surface border border-fg/10 shadow-[0_4px_24px_var(--ot-bloom-brand-faint)] px-lg py-lg my-lg lg:my-xl">
+      <div data-form-card className="relative w-full bg-surface border border-fg/10 shadow-[0_4px_24px_var(--ot-bloom-brand-faint)] px-lg py-lg my-lg lg:my-xl">
         <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-brand" />
         <p className="text-body leading-body text-fg">
           {confirmationMessage ?? 'Thank you. Your submission has been received.'}
@@ -67,7 +83,7 @@ export default function FormWrapper({ steps, title, description, submitUrl, conf
   }
 
   return (
-    <div className="relative w-full bg-surface border border-fg/10 shadow-[0_4px_24px_var(--ot-bloom-brand-faint)] px-lg py-lg my-lg lg:my-xl">
+    <div data-form-card className="relative w-full bg-surface border border-fg/10 shadow-[0_4px_24px_var(--ot-bloom-brand-faint)] px-lg py-lg my-lg lg:my-xl">
       {/* 2px brand rule at the top of the form card */}
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-brand" />
 
@@ -75,8 +91,15 @@ export default function FormWrapper({ steps, title, description, submitUrl, conf
         <>
           <header className="mb-lg">
             {title && (
+              // Theme's primary font (font-display is Syne, a fixed accent
+              // face reserved for headline-scale moments elsewhere — not
+              // appropriate as a form's default heading), heading weight,
+              // and a size that actually reads as a heading over the body
+              // copy below it — matches how every other heading in this
+              // codebase pairs its text-* size with font-bold (see
+              // SectionLabel).
               <h2
-                className="font-display font-normal text-title leading-title tracking-title text-fg"
+                className="font-bold text-headline leading-headline tracking-headline text-fg"
               >
                 {title}
               </h2>
@@ -113,7 +136,7 @@ export default function FormWrapper({ steps, title, description, submitUrl, conf
           )}
 
           {steps.length > 1 && (
-            <div className="mt-lg flex items-center justify-between border-t border-fg/10 pt-lg">
+            <div data-step-nav className="mt-lg flex items-center justify-between border-t border-fg/10 pt-lg">
               <Button
                 type="button"
                 variant="ghost"
